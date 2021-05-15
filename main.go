@@ -10,6 +10,7 @@ import (
 	"github.com/recoilme/dogenews/model"
 	"github.com/recoilme/dogenews/web"
 	"github.com/tidwall/interval"
+	"golang.org/x/crypto/acme/autocert"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -17,7 +18,7 @@ import (
 
 func main() {
 	//TODO params
-	address := ":8081"
+	address := ""
 	dbFile := "db.db"
 	updInt := 100
 	newLogger := logger.New(
@@ -56,5 +57,9 @@ func main() {
 
 	}, time.Second*time.Duration(updInt))
 
-	log.Fatal(http.ListenAndServe(address, srv))
+	if address == "" {
+		log.Fatal(http.Serve(autocert.NewListener("doge.news"), srv))
+	} else {
+		log.Fatal(http.ListenAndServe(address, srv))
+	}
 }
