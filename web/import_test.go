@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/recoilme/links/domains/vc_ru"
+	"github.com/recoilme/dogenews/domains/vc_ru"
 	"github.com/stretchr/testify/assert"
 )
 

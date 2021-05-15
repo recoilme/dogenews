@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/recoilme/links/model"
+	"github.com/recoilme/dogenews/model"
 	. "github.com/stevelacy/daz"
 	"github.com/tidwall/interval"
 	"gorm.io/gorm"

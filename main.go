@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/recoilme/links/model"
-	"github.com/recoilme/links/web"
+	"github.com/recoilme/dogenews/model"
+	"github.com/recoilme/dogenews/web"
 	"github.com/tidwall/interval"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

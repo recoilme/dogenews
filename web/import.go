@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/joshleeb/textrank"
-	"github.com/recoilme/links/domains/vc_ru"
-	"github.com/recoilme/links/model"
+	"github.com/recoilme/dogenews/domains/vc_ru"
+	"github.com/recoilme/dogenews/model"
 )
 
 func (s *Server) Import(path string, validate bool) error {

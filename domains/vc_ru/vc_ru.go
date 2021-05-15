@@ -9,7 +9,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"
 	"github.com/headzoo/surf/browser"
-	"github.com/recoilme/links/model"
+	"github.com/recoilme/dogenews/model"
 )
 
 type Vc struct {
