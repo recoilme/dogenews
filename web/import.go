@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/joshleeb/textrank"
+	"github.com/recoilme/dogenews/domains/habr_com"
 	"github.com/recoilme/dogenews/domains/vc_ru"
 	"github.com/recoilme/dogenews/model"
 )
@@ -19,6 +20,8 @@ func (s *Server) Import(path string, validate bool) error {
 	switch path {
 	case "vc_ru":
 		site = vc_ru.New("vc.ru")
+	case "habr_com":
+		site = habr_com.New("habr.com")
 	default:
 		return errors.New("site not found:" + path)
 	}

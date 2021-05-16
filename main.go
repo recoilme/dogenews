@@ -54,6 +54,10 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
+		errH := srv.Import("habr_com", validate)
+		if errH != nil {
+			fmt.Println(errH)
+		}
 
 	}, time.Second*time.Duration(updInt))
 
