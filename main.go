@@ -18,7 +18,7 @@ import (
 
 func main() {
 	//TODO params
-	address := ""
+	address := "" //":8080"
 	dbFile := "db.db"
 	updInt := 100
 	newLogger := logger.New(
