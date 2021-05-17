@@ -110,7 +110,12 @@ func (habr *Habr) Article(link string) (*model.Article, error) {
 		a.ImageBannerMeta = fmt.Sprintf("width=%s&height=%s", width, height)
 	}
 	a.Language = "ru"
-	a.Category = strings.ToLower(strings.TrimSpace(habr.bow.Find("a.hub-link").First().Text()))
+	habr.bow.Find("a.hub-link").Each(func(i int, s *goquery.Selection) {
+		cat := strings.ToLower(strings.TrimSpace(s.Text()))
+		if a.Category == "" && !strings.Contains(cat, "блог") {
+			a.Category = cat
+		}
+	})
 	cntViewS := strings.TrimSpace(habr.bow.Find("span.post-stats__views-count").First().Text())
 	k := 1
 	if strings.HasSuffix(cntViewS, "k") {
@@ -142,7 +147,6 @@ func (habr *Habr) Article(link string) (*model.Article, error) {
 	habr.bow.Find("a.post__user-info").Each(func(_ int, s *goquery.Selection) {
 		if link, ok := s.Attr("href"); ok {
 			a.AuthorUrl = link
-
 		}
 	})
 	habr.bow.Find("img.user-info__image-pic").Each(func(_ int, s *goquery.Selection) {
