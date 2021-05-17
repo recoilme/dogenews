@@ -40,22 +40,23 @@ func (s *Server) Import(path string, validate bool) error {
 			links = append(links, a.Url)
 		}
 	}
-	//links = append(links, "https://vc.ru/dev/244506")
 	ins, upd, del := 0, 0, 0
 	for _, link := range links {
+		host, err := hostName(link)
+		if host != site.Host() {
+			//fmt.Println("host != site.Host()", link, host, site.Host()) //TODO skip this?
+			continue
+		}
 		time.Sleep(1 * time.Second)
 		if validate {
 			time.Sleep(5 * time.Second)
 		}
-		host, err := hostName(link)
+
 		if err != nil {
 			fmt.Println(link, host, err) //TODO skip this?
 			continue
 		}
-		if host != site.Host() {
-			fmt.Println(link, host) //TODO skip this?
-			continue
-		}
+
 		art := &model.Article{Host: host, Url: link}
 		//find in db by host/url
 		s.DB.Where(art).First(art)
