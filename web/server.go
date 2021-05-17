@@ -190,6 +190,9 @@ func Arts(art []model.Article, path string) string {
 }
 
 func paretto(i, len int) (float64, string) {
+	if len == 0 {
+		return 0., "D"
+	}
 	score := float64(i+1) / float64(len)
 	//fmt.Println((i), score)
 	switch {
