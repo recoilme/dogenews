@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/recoilme/dogenews/model"
 	"github.com/recoilme/dogenews/web"
+	"github.com/recoilme/graceful"
 	"github.com/tidwall/interval"
 	"golang.org/x/crypto/acme/autocert"
 	"gorm.io/driver/sqlite"
@@ -16,9 +18,16 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+var (
+	//params
+	address = flag.String("address", ":80", "address to listen on (default: :80)")
+)
+
 func main() {
-	//TODO params
-	address := "" //":8080"
+	// config load
+	flag.Parse()
+
+	//db
 	dbFile := "db.db"
 	updInt := 100
 	newLogger := logger.New(
@@ -41,8 +50,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if sqlDB, err := db.DB(); err == nil {
+		defer sqlDB.Close()
+	}
 
 	srv := &web.Server{DB: db}
+
+	// import
 	nextCheck := time.Now()
 	srv.Iv = interval.Set(func(t time.Time) {
 		validate := false
@@ -61,9 +75,35 @@ func main() {
 
 	}, time.Second*time.Duration(updInt))
 
-	if address == "" {
+	// signal check
+	quit := make(chan os.Signal, 1)
+	graceful.Unignore(quit, fallback, graceful.Terminate...)
+
+	//web server
+	if *address == ":80" {
+		//run on server - redirect HTTP 2 HTTPS
+		go http.ListenAndServe(*address, http.HandlerFunc(redirectHTTP))
+		//run HTTP/2 server
+		fmt.Println("Start:", time.Now())
 		log.Fatal(http.Serve(autocert.NewListener("doge.news"), srv))
-	} else {
-		log.Fatal(http.ListenAndServe(address, srv))
 	}
+	//run on localhost/debug via HTTP/1.1 (8080 and so on port)
+	fmt.Println("Start(debug):", time.Now())
+	log.Fatal(http.ListenAndServe(*address, srv))
+}
+
+func redirectHTTP(w http.ResponseWriter, req *http.Request) {
+	target := "https://" + req.Host + req.URL.Path
+	if len(req.URL.RawQuery) > 0 {
+		target += "?" + req.URL.RawQuery
+	}
+	//log.Printf("redirect to: %s", target)
+	http.Redirect(w, req, target,
+		// consider the codes 308, 302, or 301
+		http.StatusTemporaryRedirect)
+}
+
+func fallback() error {
+	fmt.Println("Bye", time.Now())
+	return nil
 }
