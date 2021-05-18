@@ -175,7 +175,7 @@ func Arts(art []model.Article, path string) string {
 	// not main page, sort by score
 	if path != "" {
 		sort.Slice(art, func(i, j int) bool {
-			return (art[i].CntLike) > art[j].CntLike
+			return int(art[i].Score*10000) > int(art[j].Score*10000)
 		})
 	}
 
