@@ -23,6 +23,7 @@ var (
 	address = flag.String("address", ":80", "address to listen on (default: :80)")
 )
 
+// debug: go run main.go -address=":8080"
 func main() {
 	// config load
 	flag.Parse()

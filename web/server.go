@@ -163,13 +163,21 @@ func Arts(art []model.Article, path string) string {
 		art[i].Score += pv
 		art[i].ScoreTxt += pc
 	}
-	//sort by pubdate
-	sort.Slice(art, func(i, j int) bool {
-		if int64(art[i].Score*100) == int64(art[j].Score*100) {
-			return art[i].DatePub.Unix() > art[j].DatePub.Unix()
-		}
-		return art[i].Score > art[j].Score
-	})
+	//main page, sort by pubdate inside same score
+	if path == "" {
+		sort.Slice(art, func(i, j int) bool {
+			if int64(art[i].Score*100) == int64(art[j].Score*100) {
+				return art[i].DatePub.Unix() > art[j].DatePub.Unix()
+			}
+			return art[i].Score > art[j].Score
+		})
+	}
+	// not main page, sort by score
+	if path != "" {
+		sort.Slice(art, func(i, j int) bool {
+			return (art[i].CntLike) > art[j].CntLike
+		})
+	}
 
 	for i, a := range art {
 		if i <= 1 && path != "" {
@@ -194,16 +202,20 @@ func paretto(i, len int) (float64, string) {
 		return 0., "D"
 	}
 	score := float64(i+1) / float64(len)
-	//fmt.Println((i), score)
 	switch {
 	case score <= 0.2:
-		return 0.8, "A"
+		//(.01 - score/100.) - хитрая хрень чтоб в третьем+ знаке сохранить
+		//место артикля в оверол выдаче по домену, транслированное в вес
+		//0 0.809
+		//1 0.808
+		//2 0.157
+		return 0.80 + (.01 - score/100.), "A"
 	case score <= 0.5:
-		return 0.15, "B"
+		return 0.15 + (.01 - score/100.), "B"
 	case score <= 0.95:
-		return 0.04, "C"
+		return 0.04 + (.01 - score/100.), "C"
 	default:
-		return 0.01, "D"
+		return 0.01 + (.01 - score/100.), "D"
 	}
 }
 
