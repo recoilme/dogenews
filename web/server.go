@@ -180,7 +180,7 @@ func Arts(art []model.Article, path string) string {
 	}
 
 	for i, a := range art {
-		if i <= 1 && path != "" {
+		if i <= 1 || (i > 5 && i < 12) || (i > 21 && i < 42) {
 			hero := fmt.Sprintf(artHero2, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, a.Url,
 				a.AuthorName, fmt.Sprintf("%d", a.CntComm), fmt.Sprintf("%d", a.CntLike))
 
@@ -192,6 +192,7 @@ func Arts(art []model.Article, path string) string {
 			a.AuthorAva, a.AuthorName, strings.ToUpper(a.Host))
 		items = append(items, element)
 	}
+	items = items[:301] //limit by 300 articles
 
 	items = append(items, artFoot)
 	return strings.Join(items, "")
