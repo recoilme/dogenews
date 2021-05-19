@@ -26,6 +26,7 @@ import (
 type Server struct {
 	DB *gorm.DB
 	Iv interval.Interval
+	Tg string
 }
 
 // design: https://tailblocks.cc/
@@ -74,8 +75,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if checkErr(err, w) {
 				return
 			}
-			u, err := telegramwidget.ConvertAndVerifyForm(params, "1705051125:AAGIcJjXyy2Bjf-Y0nQepoMV7unOBMzegAM")
+			u, err := telegramwidget.ConvertAndVerifyForm(params, s.Tg)
 			if checkErr(err, w) {
+				return
+			}
+			usr := &model.User{TgId: u.ID, AuthDate: time.Now(), Username: u.Username,
+				FirstName: u.FirstName, LastName: u.LastName, PhotoURL: u.PhotoURL.RawPath}
+			fmt.Printf("%+v\n", usr)
+			res := s.DB.Create(usr)
+			if checkErr(res.Error, w) {
 				return
 			}
 			cookie := http.Cookie{

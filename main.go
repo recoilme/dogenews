@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/recoilme/dogenews/model"
@@ -31,6 +33,11 @@ func main() {
 	//db
 	dbFile := "db.db"
 	updInt := 100
+	tgtoken, err := ioutil.ReadFile("tg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	tg := strings.TrimSpace(string(tgtoken))
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
@@ -51,11 +58,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = db.AutoMigrate(&model.User{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if sqlDB, err := db.DB(); err == nil {
 		defer sqlDB.Close()
 	}
 
-	srv := &web.Server{DB: db}
+	srv := &web.Server{DB: db, Tg: tg}
 
 	// import
 	nextCheck := time.Now()

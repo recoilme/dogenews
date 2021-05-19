@@ -45,3 +45,16 @@ type Article struct {
 	ScoreTxt   string
 	StatusCode int
 }
+
+type User struct {
+	ID        uint `gorm:"primarykey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+
+	TgId      int64 `gorm:"index:,unique"`
+	AuthDate  time.Time
+	FirstName string
+	LastName  string
+	PhotoURL  string
+	Username  string
+}
