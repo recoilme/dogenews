@@ -2,11 +2,16 @@ package web
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -64,6 +69,26 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			//fmt.Println(contentType)
 			w.Header().Set("Content-Type", contentType)
 			io.Copy(w, bytes.NewReader(b))
+		case strings.HasPrefix(path, "auth"):
+			ok := checkTelegramAuthorization(path, "")
+			if ok {
+				info, _ := json.MarshalIndent(path, "", "  ")
+				cookie := http.Cookie{
+					Name:    "tg",
+					Domain:  "doge.news",
+					Value:   string(info),
+					Path:    "/",
+					Expires: time.Now().Add(365 * 24 * time.Hour),
+				}
+				http.SetCookie(w, &cookie)
+				http.Redirect(w, r, "https://doge.news", http.StatusTemporaryRedirect)
+				/*w.WriteHeader(http.StatusOK)
+				w.Header().Set("Content-Type", "text/html")
+				w.Write(info)*/
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -118,7 +143,7 @@ func Arts(art []model.Article, path string) string {
 
 	for i := range art {
 		// не статзначимо, занизим метрики
-		minimal := 300
+		minimal := 1000
 		if art[i].CntView < minimal {
 			share := float64(art[i].CntView) / float64(minimal)
 			art[i].CntComm = int(float64(art[i].CntComm) * share)
@@ -192,7 +217,9 @@ func Arts(art []model.Article, path string) string {
 			a.AuthorAva, a.AuthorName, strings.ToUpper(a.Host))
 		items = append(items, element)
 	}
-	items = items[:301] //limit by 300 articles
+	if len(items) > 301 {
+		items = items[:301] //limit by 300 articles
+	}
 
 	items = append(items, artFoot)
 	return strings.Join(items, "")
@@ -242,4 +269,33 @@ func head(title string) HTML {
 
 	head := H("head", H("title", title), meta, links)
 	return head
+}
+
+//1705051125:AAGIcJjXyy2Bjf-Y0nQepoMV7unOBMzegAM
+
+func checkTelegramAuthorization(data, token string) bool {
+	params, _ := url.ParseQuery(data)
+	strs := []string{}
+	var hash = ""
+	for k, v := range params {
+		if k == "hash" {
+			hash = v[0]
+			continue
+		}
+		strs = append(strs, k+"="+v[0])
+	}
+	sort.Strings(strs)
+	var imploded = ""
+	for _, s := range strs {
+		if imploded != "" {
+			imploded += "\n"
+		}
+		imploded += s
+	}
+	sha256hash := sha256.New()
+	io.WriteString(sha256hash, token)
+	hmachash := hmac.New(sha256.New, sha256hash.Sum(nil))
+	io.WriteString(hmachash, imploded)
+	ss := hex.EncodeToString(hmachash.Sum(nil))
+	return hash == ss
 }
