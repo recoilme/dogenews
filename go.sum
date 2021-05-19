@@ -30,6 +30,8 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/tidwall/interval v0.0.0-20191207210631-da4d74c2f07b h1:wOtDbVMF35oMAbxyn8PxlNHC2btH3QPmqLbUnNZxx2I=
 github.com/tidwall/interval v0.0.0-20191207210631-da4d74c2f07b/go.mod h1:yCPTzmuDmgxwgw9Dlc72ezoLS85dtTY+95smzJ+LNvk=
+github.com/wesleym/telegramwidget v1.1.0 h1:E6B+I/VvitGQ4rYFFiz6ZDyp2fXw6EldmkHuMmdr1/w=
+github.com/wesleym/telegramwidget v1.1.0/go.mod h1:FsFi1IUgJWVx0Xer4XPzySv6RpAt0CfXWSJ3A3HkM0s=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a h1:kr2P4QFmQr29mSLA43kwrOcgcReGTfbE9N577tCTuBc=
 golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a/go.mod h1:P+XmwS30IXTQdn5tA2iutPOUgjI07+tq3H3K9MVA1s8=

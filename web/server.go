@@ -70,7 +70,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", contentType)
 			io.Copy(w, bytes.NewReader(b))
 		case strings.HasPrefix(path, "auth"):
-			ok := checkTelegramAuthorization(path, "1705051125:AAGIcJjXyy2Bjf-Y0nQepoMV7unOBMzegAM")
+			//params, _ := url.ParseQuery(r.URL.Path)
+			//telegramwidget.ConvertAndVerifyForm()
+			ok := checkTelegramAuthorization(r.URL.Path, "1705051125:AAGIcJjXyy2Bjf-Y0nQepoMV7unOBMzegAM")
 			if ok {
 				info, _ := json.MarshalIndent(path, "", "  ")
 				cookie := http.Cookie{
