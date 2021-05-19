@@ -70,7 +70,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", contentType)
 			io.Copy(w, bytes.NewReader(b))
 		case strings.HasPrefix(path, "auth"):
-			ok := checkTelegramAuthorization(path, "")
+			ok := checkTelegramAuthorization(path, "1705051125:AAGIcJjXyy2Bjf-Y0nQepoMV7unOBMzegAM")
 			if ok {
 				info, _ := json.MarshalIndent(path, "", "  ")
 				cookie := http.Cookie{
@@ -90,6 +90,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		default:
+
 			w.WriteHeader(http.StatusNotFound)
 		}
 	default:
@@ -270,8 +271,6 @@ func head(title string) HTML {
 	head := H("head", H("title", title), meta, links)
 	return head
 }
-
-//1705051125:AAGIcJjXyy2Bjf-Y0nQepoMV7unOBMzegAM
 
 func checkTelegramAuthorization(data, token string) bool {
 	params, _ := url.ParseQuery(data)
