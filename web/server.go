@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,6 +19,7 @@ import (
 	"github.com/recoilme/dogenews/model"
 	. "github.com/stevelacy/daz"
 	"github.com/tidwall/interval"
+	"github.com/wesleym/telegramwidget"
 	"gorm.io/gorm"
 )
 
@@ -70,29 +70,25 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", contentType)
 			io.Copy(w, bytes.NewReader(b))
 		case strings.HasPrefix(path, "auth"):
-			//params, _ := url.ParseQuery(r.URL.Path)
-			//telegramwidget.ConvertAndVerifyForm()
-			ok := checkTelegramAuthorization(r.URL.Path, "1705051125:AAGIcJjXyy2Bjf-Y0nQepoMV7unOBMzegAM")
-			if ok {
-				info, _ := json.MarshalIndent(path, "", "  ")
-				cookie := http.Cookie{
-					Name:    "tg",
-					Domain:  "doge.news",
-					Value:   string(info),
-					Path:    "/",
-					Expires: time.Now().Add(365 * 24 * time.Hour),
-				}
-				http.SetCookie(w, &cookie)
-				http.Redirect(w, r, "https://doge.news", http.StatusTemporaryRedirect)
-				/*w.WriteHeader(http.StatusOK)
-				w.Header().Set("Content-Type", "text/html")
-				w.Write(info)*/
+			params, err := url.ParseQuery(r.URL.RawQuery)
+			if checkErr(err, w) {
 				return
 			}
-			w.WriteHeader(http.StatusBadRequest)
+			u, err := telegramwidget.ConvertAndVerifyForm(params, "1705051125:AAGIcJjXyy2Bjf-Y0nQepoMV7unOBMzegAM")
+			if checkErr(err, w) {
+				return
+			}
+			cookie := http.Cookie{
+				Name:    "tg",
+				Domain:  "doge.news",
+				Value:   fmt.Sprintf("%d", u.ID),
+				Path:    "/",
+				Expires: time.Now().Add(365 * 24 * time.Hour),
+			}
+			http.SetCookie(w, &cookie)
+			http.Redirect(w, r, "https://doge.news", http.StatusTemporaryRedirect)
 			return
 		default:
-
 			w.WriteHeader(http.StatusNotFound)
 		}
 	default:
