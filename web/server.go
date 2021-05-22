@@ -57,6 +57,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			w.WriteHeader(http.StatusOK)
 			w.Write(bin)
+		case strings.HasPrefix(path, "del"):
+			usr := &model.User{TgId: int64(1263310)}
+			tx := s.DB.Delete(usr)
+			if checkErr(tx.Error, w) {
+				return
+			}
+			w.WriteHeader(http.StatusOK)
 		case strings.HasPrefix(path, "imp/"):
 			path = strings.TrimPrefix(path, "imp/")
 			err := s.Import(path, false)
