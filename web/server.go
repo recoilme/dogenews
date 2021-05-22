@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,15 +40,25 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case path == "ok":
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(http.StatusText(200)))
-		case path == "" || path == "today" || path == "yesterday" || path == "week":
+		case path == "" || path == "td" || path == "ytd" || path == "wk":
+			c, err := r.Cookie("usr")
+			if err == nil {
+				fmt.Println("cookie", c.Value)
+				id, _ := strconv.ParseInt(c.Value, 10, 64)
+				usr := &model.User{ID: uint(id)}
+				tx := s.DB.Where(usr).First(usr)
+				if tx.Error == nil {
+					fmt.Printf("usr: %+v\n", usr)
+				}
+			}
 			bin, err := s.Main(path)
 			if checkErr(err, w) {
 				return
 			}
 			w.WriteHeader(http.StatusOK)
 			w.Write(bin)
-		case strings.HasPrefix(path, "import/"):
-			path = strings.TrimPrefix(path, "import/")
+		case strings.HasPrefix(path, "imp/"):
+			path = strings.TrimPrefix(path, "imp/")
 			err := s.Import(path, false)
 			if checkErr(err, w) {
 				return
@@ -79,17 +90,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if checkErr(err, w) {
 				return
 			}
-			usr := &model.User{TgId: u.ID, AuthDate: time.Now(), Username: u.Username,
+			usr := model.User{TgId: u.ID, AuthDate: time.Now(), Username: u.Username,
 				FirstName: u.FirstName, LastName: u.LastName, PhotoURL: u.PhotoURL.RawPath}
 			fmt.Printf("%+v\n", usr)
-			res := s.DB.Create(usr)
+			res := s.DB.Create(&usr)
 			if checkErr(res.Error, w) {
 				return
 			}
 			cookie := http.Cookie{
-				Name:    "tg",
+				Name:    "usr",
 				Domain:  "doge.news",
-				Value:   fmt.Sprintf("%d", u.ID),
+				Value:   fmt.Sprintf("%d", usr.ID),
 				Path:    "/",
 				Expires: time.Now().Add(365 * 24 * time.Hour),
 			}
@@ -117,12 +128,12 @@ func (s *Server) Main(path string) ([]byte, error) {
 	to := time.Now()
 	from := to
 	switch path {
-	case "", "today":
+	case "", "td":
 		from = to.Add(time.Duration(-24*1) * time.Hour)
-	case "yesterday":
+	case "ytd":
 		to = to.Add(time.Duration(-24*1) * time.Hour)
 		from = to.Add(time.Duration(-24*1) * time.Hour)
-	case "week":
+	case "wk":
 		from = to.Add(time.Duration(-24*7) * time.Hour)
 	}
 
@@ -207,7 +218,7 @@ func Arts(art []model.Article, path string) string {
 	// not main page, sort by score
 	if path != "" {
 		sort.Slice(art, func(i, j int) bool {
-			return int(art[i].Score*10000) > int(art[j].Score*10000)
+			return int(art[i].Score*1000) > int(art[j].Score*1000)
 		})
 	}
 
