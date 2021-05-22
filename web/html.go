@@ -9,9 +9,9 @@ const (
   <span class="ml-3 text-xl">doge &middot; news</span>
 </a>
 <nav class="md:mr-auto md:ml-4 md:py-1 md:pl-4 md:border-l md:border-gray-700	flex flex-wrap items-center text-base justify-center">
-  <a href="today" class="mr-5 hover:text-white">Today</a>
-  <a href="yesterday" class="mr-5 hover:text-white">Yesterday</a>
-  <a href="week" class="mr-5 hover:text-white">Week</a>
+  <a href="td" class="mr-5 hover:text-white">Today</a>
+  <a href="ytd" class="mr-5 hover:text-white">Yesterday</a>
+  <a href="wk" class="mr-5 hover:text-white">Week</a>
 </nav>
 <!--
 <button class="inline-flex items-center bg-gray-800 border-0 py-1 px-3 focus:outline-none hover:bg-gray-700 rounded text-base mt-4 md:mt-0">Button
