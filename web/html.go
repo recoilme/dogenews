@@ -20,7 +20,7 @@ const (
   </svg>
 </button>
 -->
-<script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="newsdogebot" data-size="medium" data-radius="4" data-auth-url="https://doge.news/auth" data-request-access="write"></script>
+%s
 </div>
 </header>
 `

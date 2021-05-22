@@ -25,9 +25,10 @@ import (
 )
 
 type Server struct {
-	DB *gorm.DB
-	Iv interval.Interval
-	Tg string
+	DB  *gorm.DB
+	Iv  interval.Interval
+	Tg  string
+	Usr *model.User
 }
 
 // design: https://tailblocks.cc/
@@ -43,12 +44,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case path == "" || path == "td" || path == "ytd" || path == "wk":
 			c, err := r.Cookie("usr")
 			if err == nil {
-				fmt.Println("cookie", c.Value)
+				//fmt.Println("cookie", c.Value)
 				id, _ := strconv.ParseInt(c.Value, 10, 64)
 				usr := &model.User{ID: uint(id)}
 				tx := s.DB.Where(usr).First(usr)
 				if tx.Error == nil {
 					fmt.Printf("usr: %+v\n", usr)
+					s.Usr = usr
 				}
 			}
 			bin, err := s.Main(path)
@@ -99,7 +101,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			usr := model.User{TgId: u.ID, AuthDate: time.Now(), Username: u.Username,
 				FirstName: u.FirstName, LastName: u.LastName, PhotoURL: fmt.Sprintf("%s", u.PhotoURL)}
-			fmt.Printf("%+v\n", usr)
+			//fmt.Printf("%+v\n", usr)
 			res := s.DB.Create(&usr)
 			if checkErr(res.Error, w) {
 				return
@@ -150,15 +152,20 @@ func (s *Server) Main(path string) ([]byte, error) {
 	}
 	body := H(
 		"body", Attr{"class": "text-gray-400 bg-gray-900 body-font"},
-		H("div", UnsafeContent(Menu())),
+		H("div", UnsafeContent(s.Menu())),
 		H("div", Attr{"class": "max-w-4xl mx-auto"}, UnsafeContent(Arts(art, path))),
 	)
 	html := H("html", head("doge · news"), body)
 	return []byte(html()), nil
 }
 
-func Menu() string {
-	return menu
+func (s *Server) Menu() string {
+	if s.Usr != nil && s.Usr.PhotoURL != "" {
+		ava := fmt.Sprintf(`<img class="w-10 h-10 text-white p-2 bg-green-500 rounded-full" viewBox="0 0 24 24" src="%s"/>`, s.Usr.PhotoURL)
+		return fmt.Sprintf(menu, ava)
+	}
+	script := `<script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="newsdogebot" data-size="medium" data-radius="4" data-auth-url="https://doge.news/auth" data-request-access="write"></script>`
+	return fmt.Sprintf(menu, script)
 }
 
 func Arts(art []model.Article, path string) string {
