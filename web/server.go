@@ -161,7 +161,7 @@ func (s *Server) Main(path string) ([]byte, error) {
 
 func (s *Server) Menu() string {
 	if s.Usr != nil && s.Usr.PhotoURL != "" {
-		ava := fmt.Sprintf(`<img class="w-10 h-10 text-white p-2 bg-green-500 rounded-full" viewBox="0 0 24 24" src="%s"/>`, s.Usr.PhotoURL)
+		ava := fmt.Sprintf(`<img class="w-10 h-10 text-white bg-green-500 rounded-full" viewBox="0 0 24 24" src="%s"/>`, s.Usr.PhotoURL)
 		return fmt.Sprintf(menu, ava)
 	}
 	script := `<script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="newsdogebot" data-size="medium" data-radius="4" data-auth-url="https://doge.news/auth" data-request-access="write"></script>`
