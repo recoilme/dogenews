@@ -59,7 +59,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Write(bin)
 		case strings.HasPrefix(path, "del"):
 			usr := &model.User{TgId: int64(1263310)}
-			tx := s.DB.Delete(usr)
+			tx := s.DB.Where(usr).Delete(usr)
 			if checkErr(tx.Error, w) {
 				return
 			}
