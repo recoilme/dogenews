@@ -98,7 +98,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			usr := model.User{TgId: u.ID, AuthDate: time.Now(), Username: u.Username,
-				FirstName: u.FirstName, LastName: u.LastName, PhotoURL: u.PhotoURL.RawPath}
+				FirstName: u.FirstName, LastName: u.LastName, PhotoURL: fmt.Sprintf("%s", u.PhotoURL)}
 			fmt.Printf("%+v\n", usr)
 			res := s.DB.Create(&usr)
 			if checkErr(res.Error, w) {
