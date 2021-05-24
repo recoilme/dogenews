@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/recoilme/dogenews/model"
@@ -23,16 +24,13 @@ import (
 var (
 	//params
 	address = flag.String("address", ":80", "address to listen on (default: :80)")
+	dbFile  = flag.String("dbfile", "db.db", "database file")
+	updInt  = flag.Int("updint", 100, "interval update (seconds)")
+	insInt  = flag.Int("insint", 5, "interval insert (seconds)")
 )
 
 // debug: go run main.go -address=":8080"
 func main() {
-	// config load
-	flag.Parse()
-
-	//db
-	dbFile := "db.db"
-	updInt := 100
 	tgtoken, err := ioutil.ReadFile("tg")
 	if err != nil {
 		log.Fatal(err)
@@ -47,7 +45,7 @@ func main() {
 			Colorful:                  true,         // color
 		},
 	)
-	db, err := gorm.Open(sqlite.Open(dbFile), &gorm.Config{
+	db, err := gorm.Open(sqlite.Open(*dbFile), &gorm.Config{
 		Logger: newLogger,
 	})
 	if err != nil {
@@ -64,11 +62,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = db.AutoMigrate(&model.Event{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if sqlDB, err := db.DB(); err == nil {
 		defer sqlDB.Close()
 	}
 
-	srv := &web.Server{DB: db, Tg: tg}
+	srv := &web.Server{DB: db, Tg: tg,
+		Evs: &model.EventBuf{Mu: sync.Mutex{}}}
 
 	// import
 	nextCheck := time.Now()
@@ -87,7 +91,27 @@ func main() {
 			fmt.Println(errH)
 		}
 
-	}, time.Second*time.Duration(updInt))
+	}, time.Second*time.Duration(*updInt))
+
+	srv.IvEv = interval.Set(func(t time.Time) {
+		var evLen int
+		var evs []*model.Event
+		srv.Evs.Mu.Lock()
+		evLen = len(srv.Evs.Buf)
+		if evLen > 0 {
+			evs = make([]*model.Event, evLen)
+			copy(evs, srv.Evs.Buf)
+			srv.Evs.Buf = make([]*model.Event, 0, evLen)
+		}
+		srv.Evs.Mu.Unlock()
+		//fmt.Println(len(evs))
+		if len(evs) > 0 {
+			tx := db.Create(&evs)
+			if tx.Error != nil {
+				fmt.Println("events", tx.Error)
+			}
+		}
+	}, time.Second*time.Duration(*insInt))
 
 	// signal check
 	quit := make(chan os.Signal, 1)

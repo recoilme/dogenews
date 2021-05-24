@@ -1,6 +1,7 @@
 package model
 
 import (
+	"sync"
 	"time"
 )
 
@@ -57,4 +58,19 @@ type User struct {
 	LastName  string
 	PhotoURL  string
 	Username  string
+}
+
+type Event struct {
+	ID        uint      `gorm:"primarykey"`
+	CreatedAt time.Time `gorm:"index"`
+	UpdatedAt time.Time
+
+	Event     string `gorm:"index"`
+	UserId    uint   `gorm:"index"`
+	ArticleId uint
+}
+
+type EventBuf struct {
+	Mu  sync.Mutex
+	Buf []*Event
 }

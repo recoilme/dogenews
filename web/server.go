@@ -25,10 +25,12 @@ import (
 )
 
 type Server struct {
-	DB  *gorm.DB
-	Iv  interval.Interval
-	Tg  string
-	Usr *model.User
+	DB   *gorm.DB
+	Iv   interval.Interval
+	IvEv interval.Interval
+	Tg   string
+	Usr  *model.User
+	Evs  *model.EventBuf
 }
 
 // design: https://tailblocks.cc/
@@ -41,6 +43,26 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case path == "ok":
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(http.StatusText(200)))
+		case path == "px":
+			params, err := url.ParseQuery(r.URL.RawQuery)
+			if err != nil {
+				fmt.Println("Error parse params", err)
+				return
+			}
+			//fmt.Println(params, err)
+			ev := &model.Event{}
+			ev.Event = params.Get("ev")
+			uid, _ := strconv.ParseInt(params.Get("uid"), 10, 64)
+			ev.UserId = uint(uid)
+			aid, _ := strconv.ParseInt(params.Get("aid"), 10, 64)
+			ev.ArticleId = uint(aid)
+			if uid > 0 {
+				s.Evs.Mu.Lock()
+				s.Evs.Buf = append(s.Evs.Buf, ev)
+				s.Evs.Mu.Unlock()
+			}
+			w.Header().Set("Content-Type", "image/png")
+			w.WriteHeader(http.StatusNoContent)
 		case path == "" || path == "td" || path == "ytd" || path == "wk":
 			c, err := r.Cookie("usr")
 			if err == nil {
@@ -117,6 +139,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "https://doge.news", http.StatusTemporaryRedirect)
 			return
 		default:
+			fmt.Println("def", path)
 			w.WriteHeader(http.StatusNotFound)
 		}
 	default:
@@ -146,6 +169,11 @@ func (s *Server) Main(path string) ([]byte, error) {
 		from = to.Add(time.Duration(-24*7) * time.Hour)
 	}
 
+	usrID := uint64(0)
+	if s.Usr != nil {
+		usrID = uint64(s.Usr.ID)
+	}
+
 	art, err := s.ArticlesByDateC(from, to)
 	if err != nil {
 		return nil, err
@@ -153,7 +181,7 @@ func (s *Server) Main(path string) ([]byte, error) {
 	body := H(
 		"body", Attr{"class": "text-gray-400 bg-gray-900 body-font"},
 		H("div", UnsafeContent(s.Menu())),
-		H("div", Attr{"class": "max-w-4xl mx-auto"}, UnsafeContent(Arts(art, path))),
+		H("div", Attr{"class": "max-w-4xl mx-auto"}, UnsafeContent(Arts(art, path, usrID))),
 	)
 	html := H("html", head("doge · news"), body)
 	return []byte(html()), nil
@@ -168,7 +196,7 @@ func (s *Server) Menu() string {
 	return fmt.Sprintf(menu, script)
 }
 
-func Arts(art []model.Article, path string) string {
+func Arts(art []model.Article, path string, usrID uint64) string {
 
 	items := []string{}
 	items = append(items, artHead)
@@ -237,14 +265,15 @@ func Arts(art []model.Article, path string) string {
 	}
 
 	for i, a := range art {
+		px := fmt.Sprintf(`<img loading="lazy" width="1" height="2" src="px?r=%d&uid=%d&aid=%d&ev=rndr">`, time.Now().UnixNano(), usrID, a.ID)
 		if i <= 1 || (i > 5 && i < 12) || (i > 21 && i < 42) {
-			hero := fmt.Sprintf(artHero2, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, a.Url,
+			hero := fmt.Sprintf(artHero2, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, a.Url, px,
 				a.AuthorName, fmt.Sprintf("%d", a.CntComm), fmt.Sprintf("%d", a.CntLike))
 
 			items = append(items, hero)
 			continue
 		}
-		element := fmt.Sprintf(artBody, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, a.Url,
+		element := fmt.Sprintf(artBody, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, a.Url, px,
 			fmt.Sprintf("%s", a.ScoreTxt), fmt.Sprintf("%d", a.CntComm), fmt.Sprintf("%d", a.CntLike),
 			a.AuthorAva, a.AuthorName, strings.ToUpper(a.Host))
 		items = append(items, element)
