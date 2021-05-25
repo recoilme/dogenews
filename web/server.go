@@ -137,7 +137,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			red := params.Get("urls")
 			if red == "" {
-				red = "http://" + strings.ToLower(params.Get("url"))
+				red = params.Get("urls")
+				red = "http://" + strings.ToLower(red)
 			} else {
 				red = "https://" + strings.ToLower(red)
 			}
@@ -148,6 +149,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				s.Evs.Mu.Unlock()
 			}
 			http.Redirect(w, r, red, http.StatusSeeOther)
+		case path == "st":
+			var count int64
+			s.DB.Model(&model.User{}).Count(&count)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(fmt.Sprintf("%d", count)))
 		default:
 			fmt.Println("def", path)
 			w.WriteHeader(http.StatusNotFound)
