@@ -31,6 +31,7 @@ var (
 
 // debug: go run main.go -address=":8080"
 func main() {
+	flag.Parse()
 	tgtoken, err := ioutil.ReadFile("tg")
 	if err != nil {
 		log.Fatal(err)

@@ -2,9 +2,6 @@ package web
 
 import (
 	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -50,13 +47,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			//fmt.Println(params, err)
-			ev := &model.Event{}
-			ev.Event = params.Get("ev")
-			uid, _ := strconv.ParseInt(params.Get("uid"), 10, 64)
-			ev.UserId = uint(uid)
-			aid, _ := strconv.ParseInt(params.Get("aid"), 10, 64)
-			ev.ArticleId = uint(aid)
-			if uid > 0 {
+			ev := parseEvent(params)
+			if ev.UserId > 0 {
 				s.Evs.Mu.Lock()
 				s.Evs.Buf = append(s.Evs.Buf, ev)
 				s.Evs.Mu.Unlock()
@@ -138,6 +130,24 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.SetCookie(w, &cookie)
 			http.Redirect(w, r, "https://doge.news", http.StatusTemporaryRedirect)
 			return
+		case path == "rd":
+			params, err := url.ParseQuery(r.URL.RawQuery)
+			if checkErr(err, w) {
+				return
+			}
+			red := params.Get("urls")
+			if red == "" {
+				red = "http://" + strings.ToLower(params.Get("url"))
+			} else {
+				red = "https://" + strings.ToLower(red)
+			}
+			ev := parseEvent(params)
+			if ev.UserId > 0 {
+				s.Evs.Mu.Lock()
+				s.Evs.Buf = append(s.Evs.Buf, ev)
+				s.Evs.Mu.Unlock()
+			}
+			http.Redirect(w, r, red, http.StatusSeeOther)
 		default:
 			fmt.Println("def", path)
 			w.WriteHeader(http.StatusNotFound)
@@ -266,20 +276,28 @@ func Arts(art []model.Article, path string, usrID uint64) string {
 
 	for i, a := range art {
 		px := fmt.Sprintf(`<img loading="lazy" width="1" height="2" src="px?r=%d&uid=%d&aid=%d&ev=rndr">`, time.Now().UnixNano(), usrID, a.ID)
+		rdurl := ""
+		if strings.HasPrefix(a.Url, "https://") {
+			rdurl = fmt.Sprintf("urls=%s", strings.ToUpper(strings.TrimPrefix(a.Url, "https://")))
+		}
+		if strings.HasPrefix(a.Url, "http://") {
+			rdurl = fmt.Sprintf("url=%s", strings.ToUpper(strings.TrimPrefix(a.Url, "http://")))
+		}
+		rd := fmt.Sprintf(`rd?%s&r=%d&uid=%d&aid=%d&ev=clck`, rdurl, time.Now().UnixNano(), usrID, a.ID)
 		if i <= 1 || (i > 5 && i < 12) || (i > 21 && i < 42) {
-			hero := fmt.Sprintf(artHero2, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, a.Url, px,
+			hero := fmt.Sprintf(artHero2, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, rd, px,
 				a.AuthorName, fmt.Sprintf("%d", a.CntComm), fmt.Sprintf("%d", a.CntLike))
 
 			items = append(items, hero)
 			continue
 		}
-		element := fmt.Sprintf(artBody, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, a.Url, px,
+		element := fmt.Sprintf(artBody, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, rd, px,
 			fmt.Sprintf("%s", a.ScoreTxt), fmt.Sprintf("%d", a.CntComm), fmt.Sprintf("%d", a.CntLike),
 			a.AuthorAva, a.AuthorName, strings.ToUpper(a.Host))
 		items = append(items, element)
 	}
-	if len(items) > 301 {
-		items = items[:301] //limit by 300 articles
+	if len(items) > 300 {
+		items = items[:300] //limit by 300 articles
 	}
 
 	items = append(items, artFoot)
@@ -332,29 +350,12 @@ func head(title string) HTML {
 	return head
 }
 
-func checkTelegramAuthorization(data, token string) bool {
-	params, _ := url.ParseQuery(data)
-	strs := []string{}
-	var hash = ""
-	for k, v := range params {
-		if k == "hash" {
-			hash = v[0]
-			continue
-		}
-		strs = append(strs, k+"="+v[0])
-	}
-	sort.Strings(strs)
-	var imploded = ""
-	for _, s := range strs {
-		if imploded != "" {
-			imploded += "\n"
-		}
-		imploded += s
-	}
-	sha256hash := sha256.New()
-	io.WriteString(sha256hash, token)
-	hmachash := hmac.New(sha256.New, sha256hash.Sum(nil))
-	io.WriteString(hmachash, imploded)
-	ss := hex.EncodeToString(hmachash.Sum(nil))
-	return hash == ss
+func parseEvent(params url.Values) *model.Event {
+	ev := &model.Event{}
+	ev.Event = params.Get("ev")
+	uid, _ := strconv.ParseInt(params.Get("uid"), 10, 64)
+	ev.UserId = uint(uid)
+	aid, _ := strconv.ParseInt(params.Get("aid"), 10, 64)
+	ev.ArticleId = uint(aid)
+	return ev
 }
