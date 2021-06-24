@@ -206,8 +206,11 @@ func (s *Server) Main(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	Arts(art, path, usrID)
-	html := fmt.Sprintf(html_, "doge · news", Arts(art, path, usrID))
+	tgLogin := `<script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="newsdogebot" data-size="medium" data-radius="4" data-auth-url="https://doge.news/auth" data-request-access="write"></script>`
+	if s.Usr != nil && s.Usr.PhotoURL != "" {
+		tgLogin = `<img src="` + s.Usr.PhotoURL + `" style="width:2em; height: 2em; margin-top: -0.5em; border-radius: 50%;">`
+	}
+	html := fmt.Sprintf(html_, "doge · news", tgLogin, Arts(art, path, usrID))
 
 	return []byte(html), nil
 }

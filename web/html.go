@@ -24,26 +24,26 @@ const (
       <header >
           <!-- Navigation -->
           <nav >
-          <ul>
+            <ul>
               <li>
                   <a href="/"><img style="width:2em; height: 2em; margin-top: -0.5em;" src="favicon/doge.svg"/> </a>
               </li>
               <li><a href="/">doge &middot; news</a></li>
+              <li class="float-right sticky">
+                %s
+              </li>
               <li class="float-right sticky"><a onclick="addFontSize(-1)">ᴀ-</a>|<a onclick="addFontSize(1)">A+</a></li>
               <li class="float-right sticky"><a onclick="toggleDarkMode(this)">☪</a></li>
               <li ><a href="#basic">period ▾</a>
               <ul>
-                  <li><a href="/">now</a></li>
-                  <li><a href="td">today</a></li>
-                  <li><a href="ytd">yesterday</a></li>
-                  <li><a href="wk">week</a></li>
+                <li><a href="/">now</a></li>
+                <li><a href="td">today</a></li>
+                <li><a href="ytd">yesterday</a></li>
+                <li><a href="wk">week</a></li>
               </ul>
               </li>
               <li class="float-right"><a href="https://github.com/recoilme/dogenews">@github</a></li>
-              <li class="float-right">
-                  <script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="newsdogebot" data-size="medium" data-radius="4" data-auth-url="https://doge.news/auth" data-request-access="write"></script>
-              </li>
-              </ul>
+            </ul>
           </nav>
       </header>
       <!-- Main page -->
