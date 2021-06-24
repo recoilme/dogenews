@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/recoilme/dogenews/model"
@@ -116,7 +117,7 @@ func main() {
 
 	// signal check
 	quit := make(chan os.Signal, 1)
-	graceful.Unignore(quit, fallback, graceful.Terminate...)
+	graceful.Unignore(quit, fallback, []os.Signal{syscall.SIGINT, syscall.SIGTERM}...)
 
 	//web server
 	if *address == ":80" {

@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/recoilme/dogenews/model"
-	. "github.com/stevelacy/daz"
 	"github.com/tidwall/interval"
 	"github.com/wesleym/telegramwidget"
 	"gorm.io/gorm"
@@ -89,7 +88,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(http.StatusText(200)))
 
-		case strings.HasPrefix(path, "web/"):
+		case strings.HasPrefix(path, "m/") || strings.HasPrefix(path, "favicon/"):
+			if strings.HasPrefix(path, "m/") {
+				path = "web/" + path[2:]
+			}
+			if strings.HasPrefix(path, "favicon/") {
+				path = "web/" + path
+			}
 			f, err := os.Open(path)
 			if err != nil {
 				return
@@ -97,9 +102,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			defer f.Close()
 			b, _ := ioutil.ReadAll(f)
 			// Get the content
-			contentType := http.DetectContentType(b[:512])
+			lenb := len(b)
+			if lenb > 512 {
+				lenb = 512
+			}
+			contentType := http.DetectContentType(b[:lenb])
 			if strings.HasSuffix(path, ".svg") {
 				contentType = "image/svg+xml"
+			}
+			if strings.HasSuffix(path, ".css") {
+				contentType = "text/css"
 			}
 			//fmt.Println(contentType)
 			w.Header().Set("Content-Type", contentType)
@@ -194,28 +206,16 @@ func (s *Server) Main(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	body := H(
-		"body", Attr{"class": "text-gray-400 bg-gray-900 body-font"},
-		H("div", UnsafeContent(s.Menu())),
-		H("div", Attr{"class": "max-w-4xl mx-auto"}, UnsafeContent(Arts(art, path, usrID))),
-	)
-	html := H("html", head("doge · news"), body)
-	return []byte(html()), nil
-}
+	Arts(art, path, usrID)
+	html := fmt.Sprintf(html_, "doge · news", Arts(art, path, usrID))
 
-func (s *Server) Menu() string {
-	if s.Usr != nil && s.Usr.PhotoURL != "" {
-		ava := fmt.Sprintf(`<img class="w-10 h-10 text-white bg-green-500 rounded-full" viewBox="0 0 24 24" src="%s"/>`, s.Usr.PhotoURL)
-		return fmt.Sprintf(menu, ava)
-	}
-	script := `<script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="newsdogebot" data-size="medium" data-radius="4" data-auth-url="https://doge.news/auth" data-request-access="write"></script>`
-	return fmt.Sprintf(menu, script)
+	return []byte(html), nil
 }
 
 func Arts(art []model.Article, path string, usrID uint64) string {
 
 	items := []string{}
-	items = append(items, artHead)
+	//items = append(items, artHead)
 
 	for i := range art {
 		// не статзначимо, занизим метрики
@@ -280,7 +280,10 @@ func Arts(art []model.Article, path string, usrID uint64) string {
 		})
 	}
 
-	for i, a := range art {
+	for _, a := range art {
+		if a.StatusCode != 200 {
+			continue
+		}
 		px := fmt.Sprintf(`<img loading="lazy" width="1" height="2" src="px?r=%d&uid=%d&aid=%d&ev=rndr">`, time.Now().UnixNano(), usrID, a.ID)
 		rdurl := ""
 		if strings.HasPrefix(a.Url, "https://") {
@@ -290,23 +293,30 @@ func Arts(art []model.Article, path string, usrID uint64) string {
 			rdurl = fmt.Sprintf("url=%s", strings.ToUpper(strings.TrimPrefix(a.Url, "http://")))
 		}
 		rd := fmt.Sprintf(`rd?%s&r=%d&uid=%d&aid=%d&ev=clck`, rdurl, time.Now().UnixNano(), usrID, a.ID)
-		if i <= 1 || (i > 5 && i < 12) || (i > 21 && i < 42) {
-			hero := fmt.Sprintf(artHero2, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, rd, px,
-				a.AuthorName, fmt.Sprintf("%d", a.CntComm), fmt.Sprintf("%d", a.CntLike))
-
-			items = append(items, hero)
-			continue
+		categ := ""
+		if a.Category != "" {
+			categ = fmt.Sprintf("<code>%s</code>", strings.ToUpper(a.Category))
 		}
-		element := fmt.Sprintf(artBody, strings.ToUpper(a.Category), a.TitleMl, a.SummaryMl, rd, px,
-			fmt.Sprintf("%s", a.ScoreTxt), fmt.Sprintf("%d", a.CntComm), fmt.Sprintf("%d", a.CntLike),
-			a.AuthorAva, a.AuthorName, strings.ToUpper(a.Host))
+		//categ += fmt.Sprintf("%d", a.StatusCode)
+
+		dt := fmt.Sprintf("%s ", a.DatePub.Format("15:04"))
+		if a.DatePub.Day() != time.Now().Day() {
+			dt = fmt.Sprintf("%s ", a.DatePub.Format("Jan 2 15:04"))
+		}
+		if a.AuthorName != "" {
+			dt += ", " + strings.ToLower(a.AuthorName)
+		}
+		summ := a.Summary
+		if len(a.SummaryMl) > len(a.Summary) {
+			summ = a.SummaryMl
+		}
+		element := fmt.Sprintf(article_, rd, a.Title, summ, dt,
+			strings.ToUpper(a.Host), categ, px)
 		items = append(items, element)
 	}
 	if len(items) > 300 {
 		items = items[:300] //limit by 300 articles
 	}
-
-	items = append(items, artFoot)
 	return strings.Join(items, "")
 }
 
@@ -336,24 +346,6 @@ func (s *Server) ArticlesByDateC(from, to time.Time) ([]model.Article, error) {
 	art := make([]model.Article, 0)
 	tx := s.DB.Where("created_at BETWEEN ? AND ?", from, to).Find(&art)
 	return art, tx.Error
-}
-
-func head(title string) HTML {
-	links := H("link", Attr{
-		"href": "https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css",
-		"rel":  "stylesheet",
-	})
-
-	meta := []HTML{
-		H("meta", Attr{"charset": "UTF-8"}),
-		H("meta", Attr{
-			"name":    "viewport",
-			"content": "width=device-width, initial-scale=1.0",
-		}),
-	}
-
-	head := H("head", H("title", title), meta, links)
-	return head
 }
 
 func parseEvent(params url.Values) *model.Event {
