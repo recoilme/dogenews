@@ -66,7 +66,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					s.Usr = usr
 				}
 			}
-			bin, err := s.Main(path)
+			params, err := url.ParseQuery(r.URL.RawQuery)
+			if checkErr(err, w) {
+				return
+			}
+			bin, err := s.Main(path, params)
 			if checkErr(err, w) {
 				return
 			}
@@ -184,7 +188,7 @@ func checkErr(err error, w http.ResponseWriter) bool {
 	return false
 }
 
-func (s *Server) Main(path string) ([]byte, error) {
+func (s *Server) Main(path string, params url.Values) ([]byte, error) {
 	to := time.Now()
 	from := to
 	switch path {
@@ -202,7 +206,7 @@ func (s *Server) Main(path string) ([]byte, error) {
 		usrID = uint64(s.Usr.ID)
 	}
 
-	art, err := s.ArticlesByDateC(from, to)
+	art, err := s.ArticlesByDateC(from, to, params)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +222,6 @@ func (s *Server) Main(path string) ([]byte, error) {
 func Arts(art []model.Article, path string, usrID uint64) string {
 
 	items := []string{}
-	//items = append(items, artHead)
 
 	for i := range art {
 		// не статзначимо, занизим метрики
@@ -298,29 +301,49 @@ func Arts(art []model.Article, path string, usrID uint64) string {
 		rd := fmt.Sprintf(`rd?%s&r=%d&uid=%d&aid=%d&ev=clck`, rdurl, time.Now().UnixNano(), usrID, a.ID)
 		categ := ""
 		if a.Category != "" {
-			categ = fmt.Sprintf("<code>%s</code>", strings.ToUpper(a.Category))
+			categ = fmt.Sprintf("<a href='?c=%s'>%s</a>", url.PathEscape(a.Category), strings.ToLower(a.Category))
 		}
-		//categ += fmt.Sprintf("%d", a.StatusCode)
 
-		dt := fmt.Sprintf("%s ", a.DatePub.Format("15:04"))
-		if a.DatePub.Day() != time.Now().Day() {
-			dt = fmt.Sprintf("%s ", a.DatePub.Format("Jan 2 15:04"))
+		//dt := fmt.Sprintf("%s ", a.DatePub.Format("15:04"))
+		//if a.DatePub.Day() != time.Now().Day() {
+		dt := fmt.Sprintf("%s ", a.DatePub.Format("Jan 2 15:04"))
+		//}
+
+		summ := trimTxt(a.ContentText)
+		if len(a.Summary) > len(summ) {
+			summ = a.Summary
 		}
+		author := ""
 		if a.AuthorName != "" {
-			dt += ", " + strings.ToLower(a.AuthorName)
-		}
-		summ := a.Summary
-		if len(a.SummaryMl) > len(a.Summary) {
-			summ = a.SummaryMl
+			author = fmt.Sprintf("<a href='?a=%s'>%s</a>", url.PathEscape(a.AuthorName), strings.ToLower(a.AuthorName))
 		}
 		element := fmt.Sprintf(article_, rd, a.Title, summ, dt,
-			strings.ToUpper(a.Host), categ, px)
+			fmt.Sprintf("<a href='?d=%s'>%s</a>", url.PathEscape(a.Host), strings.ToLower(a.Host)),
+			categ, author, px)
+
 		items = append(items, element)
 	}
 	if len(items) > 300 {
 		items = items[:300] //limit by 300 articles
 	}
 	return strings.Join(items, "")
+}
+
+func trimTxt(s string) string {
+	flds := strings.Fields(s)
+	if len(flds) < 150 {
+		return s
+	}
+	bld := strings.Builder{}
+	for i, str := range flds {
+		bld.WriteString(str)
+		bld.WriteRune(' ')
+		if i >= 100 {
+			bld.WriteString(" ...")
+			break
+		}
+	}
+	return bld.String()
 }
 
 func paretto(i, len int) (float64, string) {
@@ -345,9 +368,22 @@ func paretto(i, len int) (float64, string) {
 	}
 }
 
-func (s *Server) ArticlesByDateC(from, to time.Time) ([]model.Article, error) {
+func (s *Server) ArticlesByDateC(from, to time.Time, params url.Values) ([]model.Article, error) {
 	art := make([]model.Article, 0)
-	tx := s.DB.Where("created_at BETWEEN ? AND ?", from, to).Find(&art)
+
+	tx := s.DB.Where("created_at BETWEEN ? AND ?", from, to)
+	if params != nil {
+		if params.Get("c") != "" {
+			tx = s.DB.Where("category=? AND created_at BETWEEN ? AND ?", params.Get("c"), from, to)
+		}
+		if params.Get("d") != "" {
+			tx = s.DB.Where("host=? AND created_at BETWEEN ? AND ?", params.Get("d"), from, to)
+		}
+		if params.Get("a") != "" {
+			tx = s.DB.Where("author_name=? AND created_at BETWEEN ? AND ?", params.Get("a"), from, to)
+		}
+	}
+	tx.Find(&art)
 	return art, tx.Error
 }
 

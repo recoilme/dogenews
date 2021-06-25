@@ -32,7 +32,7 @@ func (s *Server) Import(path string, validate bool) error {
 		return err
 	}
 	if validate {
-		art, err := s.ArticlesByDateC(time.Now().Add(-24*time.Hour), time.Now())
+		art, err := s.ArticlesByDateC(time.Now().Add(-24*time.Hour), time.Now(), nil)
 		if err != nil {
 			fmt.Println(err)
 		}

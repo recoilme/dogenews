@@ -14,7 +14,7 @@ func TestMain(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open("../test.db"), &gorm.Config{})
 	assert.NoError(t, err)
 	srv := &Server{DB: db}
-	art, err := srv.ArticlesByDateC(time.Now().Add(time.Duration(-24)*time.Hour), time.Now())
+	art, err := srv.ArticlesByDateC(time.Now().Add(time.Duration(-24)*time.Hour), time.Now(), nil)
 	assert.NoError(t, err)
 	for _, a := range art {
 		fmt.Println(a.CreatedAt, a.DatePub)

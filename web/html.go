@@ -26,7 +26,7 @@ const (
           <nav >
             <ul>
               <li>
-                  <a href="/"><img style="width:2em; height: 2em; margin-top: -0.5em;" src="favicon/doge.svg"/> </a>
+                  <img style="width:2em; height: 2em; margin-top: -0.5em;" src="favicon/doge.svg"/>
               </li>
               <li><a href="/">doge &middot; news</a></li>
               <li class="float-right sticky">
@@ -65,7 +65,7 @@ const (
           %s
         </p>
         <time>%s</time>
-        <div class="float-right"><code>%s</code>&ensp;%s%s</div>
+        <div>%s&ensp;%s&ensp;%s&ensp;%s</div>
     </section>
   </article>  
   `
