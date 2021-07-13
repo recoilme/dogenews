@@ -245,7 +245,7 @@ func (s *Server) Main(path string, params url.Values, usr *model.User) ([]byte, 
 	theme := "light"
 	if usr.Theme == "dark" {
 		themeIco = "☀"
-		theme = "light"
+		theme = "dark"
 	}
 	html := fmt.Sprintf(html_, theme, "doge · news", tgLogin, themeIco, Arts(art, path, usrID))
 
