@@ -241,11 +241,13 @@ func (s *Server) Main(path string, params url.Values, usr *model.User) ([]byte, 
 	if usr != nil && usr.PhotoURL != "" {
 		tgLogin = `<img src="` + usr.PhotoURL + `" style="width:2em; height: 2em; margin-top: -0.5em; border-radius: 50%;">`
 	}
-	theme := "☪"
+	themeIco := "☪"
+	theme := "light"
 	if usr.Theme == "dark" {
-		theme = "☀"
+		themeIco = "☀"
+		theme = "light"
 	}
-	html := fmt.Sprintf(html_, usr.Theme, "doge · news", tgLogin, theme, Arts(art, path, usrID))
+	html := fmt.Sprintf(html_, theme, "doge · news", tgLogin, themeIco, Arts(art, path, usrID))
 
 	return []byte(html), nil
 }
