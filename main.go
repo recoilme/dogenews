@@ -1,13 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	tg := strings.TrimSpace(string(tgtoken))
+	tg := bytes.TrimSpace(tgtoken)
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
@@ -73,7 +73,7 @@ func main() {
 		defer sqlDB.Close()
 	}
 
-	srv := &web.Server{DB: db, Tg: tg,
+	srv := &web.Server{DB: db, Token: tg,
 		Evs: &model.EventBuf{Mu: sync.Mutex{}}}
 
 	// import

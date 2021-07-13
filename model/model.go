@@ -48,16 +48,17 @@ type Article struct {
 }
 
 type User struct {
-	ID        uint `gorm:"primarykey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uint      `gorm:"primarykey" json:"uid"`
+	CreatedAt time.Time `json:"-"`
+	UpdatedAt time.Time `json:"-"`
 
-	TgId      int64 `gorm:"index:,unique"`
-	AuthDate  time.Time
-	FirstName string
-	LastName  string
-	PhotoURL  string
-	Username  string
+	TgId      *int64    `gorm:"index:,unique" json:"tgid,omitempty"`
+	AuthDate  time.Time `json:"-"`
+	FirstName string    `json:"-"`
+	LastName  string    `json:"-"`
+	PhotoURL  string    `json:"photo,omitempty"`
+	Username  string    `json:"-"`
+	Theme     string    `json:"theme,omitempty"`
 }
 
 type Event struct {

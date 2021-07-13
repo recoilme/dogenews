@@ -10,11 +10,12 @@ html.style.fontSize = (currentSize + addPx) + 'px';
 }
 
 function toggleDarkMode(el){
-    var theme='light'
+    var theme=''
     if (el.innerText == '☪'){
         el.innerText = '☀'; theme='dark';
     } else {
         el.innerText = '☪'; theme='light';
     }
     document.documentElement.setAttribute('data-theme', theme)
+    fetch("/api/v1?theme="+theme)
 }

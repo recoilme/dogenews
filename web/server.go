@@ -2,6 +2,8 @@ package web
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cristalhq/jwt/v3"
 	"github.com/recoilme/dogenews/model"
 	"github.com/tidwall/interval"
 	"github.com/wesleym/telegramwidget"
@@ -21,12 +24,11 @@ import (
 )
 
 type Server struct {
-	DB   *gorm.DB
-	Iv   interval.Interval
-	IvEv interval.Interval
-	Tg   string
-	Usr  *model.User
-	Evs  *model.EventBuf
+	DB    *gorm.DB
+	Iv    interval.Interval
+	IvEv  interval.Interval
+	Evs   *model.EventBuf
+	Token []byte
 }
 
 // design: https://tailblocks.cc/
@@ -55,29 +57,37 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "image/png")
 			w.WriteHeader(http.StatusNoContent)
 		case path == "" || path == "td" || path == "ytd" || path == "wk":
-			c, err := r.Cookie("usr")
-			if err == nil {
-				//fmt.Println("cookie", c.Value)
-				id, _ := strconv.ParseInt(c.Value, 10, 64)
-				usr := &model.User{ID: uint(id)}
-				tx := s.DB.Where(usr).First(usr)
-				if tx.Error == nil {
-					fmt.Printf("usr: %+v\n", usr)
-					s.Usr = usr
-				}
+			c, err := r.Cookie("doge")
+			if checkErr(err, w) {
+				return
 			}
+			usr := &model.User{}
+			if err == nil {
+				usr, err = s.userCurr(c.Value)
+				if checkErr(err, w) {
+					return
+				}
+			} else {
+				cookie, err := s.userUps(r.URL.Host, usr)
+				if checkErr(err, w) {
+					return
+				}
+				http.SetCookie(w, cookie)
+			}
+			fmt.Printf("usr:%+v\n", usr)
 			params, err := url.ParseQuery(r.URL.RawQuery)
 			if checkErr(err, w) {
 				return
 			}
-			bin, err := s.Main(path, params)
+			bin, err := s.Main(path, params, usr)
 			if checkErr(err, w) {
 				return
 			}
 			w.WriteHeader(http.StatusOK)
 			w.Write(bin)
 		case strings.HasPrefix(path, "del"):
-			usr := &model.User{TgId: int64(1263310)}
+			me := int64(1263310)
+			usr := &model.User{TgId: &me}
 			tx := s.DB.Where(usr).Delete(usr)
 			if checkErr(tx.Error, w) {
 				return
@@ -125,25 +135,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if checkErr(err, w) {
 				return
 			}
-			u, err := telegramwidget.ConvertAndVerifyForm(params, s.Tg)
+
+			u, err := telegramwidget.ConvertAndVerifyForm(params, string(s.Token))
 			if checkErr(err, w) {
 				return
 			}
-			usr := model.User{TgId: u.ID, AuthDate: time.Now(), Username: u.Username,
+			usr := &model.User{TgId: &u.ID, AuthDate: time.Now(), Username: u.Username,
 				FirstName: u.FirstName, LastName: u.LastName, PhotoURL: fmt.Sprintf("%s", u.PhotoURL)}
-			//fmt.Printf("%+v\n", usr)
-			res := s.DB.Create(&usr)
-			if checkErr(res.Error, w) {
+			cookie, err := s.userUps(r.URL.Host, usr)
+			if checkErr(err, w) {
 				return
 			}
-			cookie := http.Cookie{
-				Name:    "usr",
-				Domain:  "doge.news",
-				Value:   fmt.Sprintf("%d", usr.ID),
-				Path:    "/",
-				Expires: time.Now().Add(365 * 24 * time.Hour),
-			}
-			http.SetCookie(w, &cookie)
+			http.SetCookie(w, cookie)
 			http.Redirect(w, r, "https://doge.news", http.StatusTemporaryRedirect)
 			return
 		case path == "rd":
@@ -170,6 +173,35 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.DB.Model(&model.User{}).Count(&count)
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(fmt.Sprintf("%d", count)))
+		case path == "api/v1":
+			params, err := url.ParseQuery(r.URL.RawQuery)
+			if checkErr(err, w) {
+				return
+			}
+			th := params.Get("theme")
+			if !(th == "light" || th == "dark") {
+				err = errors.New("Wrong theme")
+				if checkErr(err, w) {
+					return
+				}
+			}
+			c, err := r.Cookie("doge")
+			if checkErr(err, w) {
+				return
+			}
+			usr, err := s.userCurr(c.Value)
+			if checkErr(err, w) {
+				return
+			}
+			usr.Theme = th
+			cookie, err := s.userUps(r.URL.Host, usr)
+			if checkErr(err, w) {
+				return
+			}
+			http.SetCookie(w, cookie)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(http.StatusText(200)))
+			return
 		default:
 			fmt.Println("def", path)
 			w.WriteHeader(http.StatusNotFound)
@@ -188,7 +220,7 @@ func checkErr(err error, w http.ResponseWriter) bool {
 	return false
 }
 
-func (s *Server) Main(path string, params url.Values) ([]byte, error) {
+func (s *Server) Main(path string, params url.Values, usr *model.User) ([]byte, error) {
 	to := time.Now()
 	from := to
 	switch path {
@@ -201,20 +233,21 @@ func (s *Server) Main(path string, params url.Values) ([]byte, error) {
 		from = to.Add(time.Duration(-24*7) * time.Hour)
 	}
 
-	usrID := uint64(0)
-	if s.Usr != nil {
-		usrID = uint64(s.Usr.ID)
-	}
+	usrID := uint64(usr.ID)
 
 	art, err := s.ArticlesByDateC(from, to, params)
 	if err != nil {
 		return nil, err
 	}
 	tgLogin := `<script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="newsdogebot" data-size="medium" data-radius="4" data-auth-url="https://doge.news/auth" data-request-access="write"></script>`
-	if s.Usr != nil && s.Usr.PhotoURL != "" {
-		tgLogin = `<img src="` + s.Usr.PhotoURL + `" style="width:2em; height: 2em; margin-top: -0.5em; border-radius: 50%;">`
+	if usr != nil && usr.PhotoURL != "" {
+		tgLogin = `<img src="` + usr.PhotoURL + `" style="width:2em; height: 2em; margin-top: -0.5em; border-radius: 50%;">`
 	}
-	html := fmt.Sprintf(html_, "doge · news", tgLogin, Arts(art, path, usrID))
+	theme := "☪"
+	if usr.Theme == "dark" {
+		theme = "☀"
+	}
+	html := fmt.Sprintf(html_, usr.Theme, "doge · news", tgLogin, theme, Arts(art, path, usrID))
 
 	return []byte(html), nil
 }
@@ -304,10 +337,7 @@ func Arts(art []model.Article, path string, usrID uint64) string {
 			categ = fmt.Sprintf("<a href='?c=%s'>%s</a>", url.PathEscape(a.Category), strings.ToLower(a.Category))
 		}
 
-		//dt := fmt.Sprintf("%s ", a.DatePub.Format("15:04"))
-		//if a.DatePub.Day() != time.Now().Day() {
 		dt := fmt.Sprintf("%s ", a.DatePub.Format("Jan 2 15:04"))
-		//}
 
 		summ := trimTxt(a.ContentText)
 		if len(a.Summary) > len(summ) {
@@ -395,4 +425,58 @@ func parseEvent(params url.Values) *model.Event {
 	aid, _ := strconv.ParseInt(params.Get("aid"), 10, 64)
 	ev.ArticleId = uint(aid)
 	return ev
+}
+
+// upd/ins (upsert) user
+// if id not set - create new user
+// in other cases save fields in db
+// return cookie for update
+func (s *Server) userUps(host string, usr *model.User) (*http.Cookie, error) {
+	res := s.DB.Save(usr)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	b, err := json.Marshal(usr)
+	if err != nil {
+		return nil, err
+	}
+	//set cookie
+	// create a Signer (HMAC in this example)
+	signer, err := jwt.NewSignerHS(jwt.HS256, s.Token)
+	if err != nil {
+		return nil, err
+	}
+	// create a Builder
+	builder := jwt.NewBuilder(signer)
+	token, err := builder.Build(b)
+	if err != nil {
+		return nil, err
+	}
+	cookie := http.Cookie{
+		Name:    "doge",
+		Domain:  host,
+		Value:   token.String(),
+		Path:    "/",
+		Expires: time.Now().Add(365 * 24 * time.Hour),
+	}
+	return &cookie, nil
+}
+
+// userCurr - read info about current user from cookie
+func (s *Server) userCurr(cookie string) (*model.User, error) {
+	usr := &model.User{}
+	verifier, err := jwt.NewVerifierHS(jwt.HS256, s.Token)
+	if err != nil {
+		return nil, err
+	}
+	newToken, err := jwt.ParseAndVerifyString(cookie, verifier)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(newToken.RawClaims(), usr)
+	if err != nil {
+		return nil, err
+	}
+	return usr, nil
 }

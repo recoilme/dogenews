@@ -3,7 +3,7 @@ package web
 const (
 	html_ = `
   <!DOCTYPE html>
-  <html lang="ru" data-theme="light">
+  <html lang="ru" data-theme="%s">
     <head>
       <title>%s</title>
       <meta charset=utf-8>
@@ -33,7 +33,7 @@ const (
                 %s
               </li>
               <li class="float-right sticky"><a onclick="addFontSize(-1)">ᴀ-</a>|<a onclick="addFontSize(1)">A+</a></li>
-              <li class="float-right sticky"><a onclick="toggleDarkMode(this)">☪</a></li>
+              <li class="float-right sticky"><a onclick="toggleDarkMode(this)">%s</a></li>
               <li ><a href="#basic">period ▾</a>
               <ul>
                 <li><a href="/">now</a></li>
@@ -65,7 +65,7 @@ const (
           %s
         </p>
         <time>%s</time>
-        <div>%s&ensp;%s&ensp;%s&ensp;%s</div>
+        <div>%s&ensp;%s&ensp; %s&ensp;%s</div>
     </section>
   </article>  
   `
