@@ -72,7 +72,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				http.SetCookie(w, cookie)
 				err = nil
 			}
-			fmt.Printf("usr:%+v\n", usr)
+			//fmt.Printf("usr:%+v\n", usr)
 			params, err := url.ParseQuery(r.URL.RawQuery)
 			if checkErr(err, w) {
 				return
