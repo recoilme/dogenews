@@ -139,15 +139,20 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if checkErr(err, w) {
 				return
 			}
-			c, err := r.Cookie("doge")
-			usr := &model.User{}
-			if err == nil {
-				// current user
-				usr, err = s.userCurr(c.Value)
-				if checkErr(err, w) {
-					return
+			//check is user exists in db
+			usr := &model.User{TgId: &u.ID}
+			s.DB.Where(usr).First(usr)
+			if usr.ID == 0 {
+				//record not found, read from cookie
+				c, err := r.Cookie("doge")
+				if err == nil {
+					usr, err = s.userCurr(c.Value)
+					if checkErr(err, w) {
+						return
+					}
 				}
 			}
+
 			usr.TgId = &u.ID
 			usr.AuthDate = time.Now()
 			usr.Username = u.Username
