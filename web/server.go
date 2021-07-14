@@ -25,6 +25,7 @@ import (
 
 type Server struct {
 	DB    *gorm.DB
+	Stat  *gorm.DB
 	Iv    interval.Interval
 	IvEv  interval.Interval
 	Evs   *model.EventBuf

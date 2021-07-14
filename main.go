@@ -24,10 +24,11 @@ import (
 
 var (
 	//params
-	address = flag.String("address", ":80", "address to listen on (default: :80)")
-	dbFile  = flag.String("dbfile", "db.db", "database file")
-	updInt  = flag.Int("updint", 100, "interval update (seconds)")
-	insInt  = flag.Int("insint", 5, "interval insert (seconds)")
+	address  = flag.String("address", ":80", "address to listen on (default: :80)")
+	dbFile   = flag.String("dbfile", "db.db", "database file (main)")
+	statFile = flag.String("statfile", "stat.db", "database file (stat)")
+	updInt   = flag.Int("updint", 100, "interval update (seconds)")
+	insInt   = flag.Int("insint", 5, "interval insert (seconds)")
 )
 
 // debug: go run main.go -address=":8080"
@@ -47,13 +48,14 @@ func main() {
 			Colorful:                  true,         // color
 		},
 	)
+	//main db
 	db, err := gorm.Open(sqlite.Open(*dbFile), &gorm.Config{
 		Logger: newLogger,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	// migrate
 	err = db.AutoMigrate(&model.Article{})
 	if err != nil {
 		log.Fatal(err)
@@ -63,17 +65,29 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	err = db.AutoMigrate(&model.Event{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	// close on exit
 	if sqlDB, err := db.DB(); err == nil {
 		defer sqlDB.Close()
 	}
 
-	srv := &web.Server{DB: db, Token: tg,
+	//stat db
+	stat, err := gorm.Open(sqlite.Open(*statFile), &gorm.Config{
+		Logger: newLogger,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = stat.AutoMigrate(&model.Event{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if sqlDBStat, err := stat.DB(); err == nil {
+		defer sqlDBStat.Close()
+	}
+
+	srv := &web.Server{DB: db, Stat: stat, Token: tg,
 		Evs: &model.EventBuf{Mu: sync.Mutex{}}}
 
 	// import
@@ -95,6 +109,7 @@ func main() {
 
 	}, time.Second*time.Duration(*updInt))
 
+	// write stats
 	srv.IvEv = interval.Set(func(t time.Time) {
 		var evLen int
 		var evs []*model.Event
@@ -108,7 +123,7 @@ func main() {
 		srv.Evs.Mu.Unlock()
 		//fmt.Println(len(evs))
 		if len(evs) > 0 {
-			tx := db.Create(&evs)
+			tx := stat.Create(&evs)
 			if tx.Error != nil {
 				fmt.Println("events", tx.Error)
 			}
