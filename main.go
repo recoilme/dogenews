@@ -65,6 +65,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = db.Migrator().DropTable("events")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// close on exit
 	if sqlDB, err := db.DB(); err == nil {
 		defer sqlDB.Close()
