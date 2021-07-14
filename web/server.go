@@ -133,13 +133,27 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if checkErr(err, w) {
 				return
 			}
-
+			//create new user from auth
 			u, err := telegramwidget.ConvertAndVerifyForm(params, string(s.Token))
 			if checkErr(err, w) {
 				return
 			}
-			usr := &model.User{TgId: &u.ID, AuthDate: time.Now(), Username: u.Username,
-				FirstName: u.FirstName, LastName: u.LastName, PhotoURL: fmt.Sprintf("%s", u.PhotoURL)}
+			c, err := r.Cookie("doge")
+			usr := &model.User{}
+			if err == nil {
+				// current user
+				usr, err = s.userCurr(c.Value)
+				if checkErr(err, w) {
+					return
+				}
+			}
+			usr.TgId = &u.ID
+			usr.AuthDate = time.Now()
+			usr.Username = u.Username
+			usr.FirstName = u.FirstName
+			usr.LastName = u.LastName
+			usr.PhotoURL = fmt.Sprintf("%s", u.PhotoURL)
+			// create or update user
 			cookie, err := s.userUps(r.URL.Host, usr)
 			if checkErr(err, w) {
 				return
