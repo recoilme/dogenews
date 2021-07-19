@@ -32,6 +32,8 @@ github.com/tidwall/interval v0.0.0-20191207210631-da4d74c2f07b h1:wOtDbVMF35oMAb
 github.com/tidwall/interval v0.0.0-20191207210631-da4d74c2f07b/go.mod h1:yCPTzmuDmgxwgw9Dlc72ezoLS85dtTY+95smzJ+LNvk=
 github.com/wesleym/telegramwidget v1.1.0 h1:E6B+I/VvitGQ4rYFFiz6ZDyp2fXw6EldmkHuMmdr1/w=
 github.com/wesleym/telegramwidget v1.1.0/go.mod h1:FsFi1IUgJWVx0Xer4XPzySv6RpAt0CfXWSJ3A3HkM0s=
+github.com/x-way/crawlerdetect v0.2.11 h1:/e8cqAdd5V3NnLeeHvrAWvWyeOkuDxHgbJXIkuRu6SE=
+github.com/x-way/crawlerdetect v0.2.11/go.mod h1:S8CHanGLTMMTzqgKAvkDxlLKSXfBSEJyTSx6YGS8Y48=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a h1:kr2P4QFmQr29mSLA43kwrOcgcReGTfbE9N577tCTuBc=
 golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a/go.mod h1:P+XmwS30IXTQdn5tA2iutPOUgjI07+tq3H3K9MVA1s8=

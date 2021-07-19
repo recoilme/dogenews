@@ -12,6 +12,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/interval v0.0.0-20191207210631-da4d74c2f07b
 	github.com/wesleym/telegramwidget v1.1.0
+	github.com/x-way/crawlerdetect v0.2.11
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.21.10

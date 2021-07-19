@@ -20,6 +20,7 @@ import (
 	"github.com/recoilme/dogenews/model"
 	"github.com/tidwall/interval"
 	"github.com/wesleym/telegramwidget"
+	"github.com/x-way/crawlerdetect"
 	"gorm.io/gorm"
 )
 
@@ -66,11 +67,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			} else {
-				cookie, err := s.userUps(r.URL.Host, usr)
-				if checkErr(err, w) {
-					return
+				if crawlerdetect.IsCrawler(r.Header.Get("User-Agent")) {
+					// не ставим куку для ботов
+					usr.ID = 0
+				} else {
+
+					cookie, err := s.userUps(r.URL.Host, usr)
+					if checkErr(err, w) {
+						return
+					}
+					http.SetCookie(w, cookie)
 				}
-				http.SetCookie(w, cookie)
 				err = nil
 			}
 			//fmt.Printf("usr:%+v\n", usr)
@@ -168,19 +175,21 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "https://doge.news", http.StatusTemporaryRedirect)
 			return
 		case path == "rd":
+			//redirect for stat
 			params, err := url.ParseQuery(r.URL.RawQuery)
 			if checkErr(err, w) {
 				return
 			}
-			red := params.Get("urls")
+			red := params.Get("urls") //urlS == httpS
 			if red == "" {
-				red = params.Get("urls")
+				red = params.Get("url") //http
 				red = "http://" + strings.ToLower(red)
 			} else {
 				red = "https://" + strings.ToLower(red)
 			}
 			ev := parseEvent(params)
 			if ev.UserId > 0 {
+				//skip bots (userId == 0)
 				s.Evs.Mu.Lock()
 				s.Evs.Buf = append(s.Evs.Buf, ev)
 				s.Evs.Mu.Unlock()
@@ -251,7 +260,7 @@ func (s *Server) Main(path string, params url.Values, usr *model.User) ([]byte, 
 		from = to.Add(time.Duration(-24*7) * time.Hour)
 	}
 
-	usrID := uint64(usr.ID)
+	usrID := uint(usr.ID)
 
 	art, err := s.ArticlesByDateC(from, to, params)
 	if err != nil {
@@ -272,7 +281,7 @@ func (s *Server) Main(path string, params url.Values, usr *model.User) ([]byte, 
 	return []byte(html), nil
 }
 
-func Arts(art []model.Article, path string, usrID uint64) string {
+func Arts(art []model.Article, path string, usrID uint) string {
 
 	items := []string{}
 
@@ -343,7 +352,7 @@ func Arts(art []model.Article, path string, usrID uint64) string {
 		if a.StatusCode != 200 {
 			continue
 		}
-		px := fmt.Sprintf(`<img loading="lazy" width="1" height="2" src="px?r=%d&uid=%d&aid=%d&ev=rndr">`, time.Now().UnixNano(), usrID, a.ID)
+		px := fmt.Sprintf(`<img loading="lazy" width="1" height="1" src="px?r=%d&uid=%d&aid=%d&ev=rndr">`, time.Now().UnixNano(), usrID, a.ID)
 		rdurl := ""
 		if strings.HasPrefix(a.Url, "https://") {
 			rdurl = fmt.Sprintf("urls=%s", strings.ToUpper(strings.TrimPrefix(a.Url, "https://")))
@@ -440,10 +449,14 @@ func (s *Server) ArticlesByDateC(from, to time.Time, params url.Values) ([]model
 func parseEvent(params url.Values) *model.Event {
 	ev := &model.Event{}
 	ev.Event = params.Get("ev")
-	uid, _ := strconv.ParseInt(params.Get("uid"), 10, 64)
-	ev.UserId = uint(uid)
-	aid, _ := strconv.ParseInt(params.Get("aid"), 10, 64)
-	ev.ArticleId = uint(aid)
+	uid, err := strconv.ParseInt(params.Get("uid"), 10, 64)
+	if err == nil {
+		ev.UserId = uint(uid)
+	}
+	aid, err := strconv.ParseInt(params.Get("aid"), 10, 64)
+	if err == nil {
+		ev.ArticleId = uint(aid)
+	}
 	return ev
 }
 

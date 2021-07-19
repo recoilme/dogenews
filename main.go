@@ -23,6 +23,7 @@ import (
 )
 
 var (
+	ver = 2 //v0.0.2
 	//params
 	address  = flag.String("address", ":80", "address to listen on (default: :80)")
 	dbFile   = flag.String("dbfile", "db.db", "database file (main)")
@@ -71,6 +72,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if ver == 2 {
+		tx := db.Exec("DELETE FROM users")
+		if tx.Error != nil {
+			log.Fatal(tx.Error)
+		}
+	}
+
 	// close on exit
 	if sqlDB, err := db.DB(); err == nil {
 		defer sqlDB.Close()
@@ -87,6 +95,13 @@ func main() {
 	err = stat.AutoMigrate(&model.Event{})
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if ver == 2 {
+		tx := stat.Exec("DELETE FROM events")
+		if tx.Error != nil {
+			log.Fatal(tx.Error)
+		}
 	}
 
 	if sqlDBStat, err := stat.DB(); err == nil {
