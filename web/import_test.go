@@ -21,5 +21,3 @@ func TestDel(t *testing.T) {
 	_, ok := site.LinkOk(link, true)
 	assert.Equal(t, false, ok)
 }
-
-//TODO test 2021-06-24T13:05:51.000Z // 16:05 Msc

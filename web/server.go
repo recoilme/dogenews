@@ -24,6 +24,10 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	cookieUsr = "doge.usr"
+)
+
 type Server struct {
 	DB    *gorm.DB
 	Stat  *gorm.DB
@@ -59,7 +63,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "image/png")
 			w.WriteHeader(http.StatusNoContent)
 		case path == "" || path == "td" || path == "ytd" || path == "wk":
-			c, err := r.Cookie("doge")
+			c, err := r.Cookie(cookieUsr)
 			usr := &model.User{}
 			if err == nil {
 				usr, err = s.userCurr(c.Value)
@@ -81,6 +85,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				err = nil
 			}
 			//fmt.Printf("usr:%+v\n", usr)
+			if usr.TgId == nil {
+				//не пишем стату для незарегов
+				usr.ID = 0
+			}
 			params, err := url.ParseQuery(r.URL.RawQuery)
 			if checkErr(err, w) {
 				return
@@ -94,7 +102,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case strings.HasPrefix(path, "del"):
 			me := int64(1263310)
 			usr := &model.User{TgId: &me}
-			tx := s.DB.Where(usr).Delete(usr)
+			tx := s.Stat.Where(usr).Delete(usr)
 			if checkErr(tx.Error, w) {
 				return
 			}
@@ -148,10 +156,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			//check is user exists in db
 			usr := &model.User{TgId: &u.ID}
-			s.DB.Where(usr).First(usr)
+			s.Stat.Where(usr).First(usr)
 			if usr.ID == 0 {
 				//record not found, read from cookie
-				c, err := r.Cookie("doge")
+				c, err := r.Cookie(cookieUsr)
 				if err == nil {
 					usr, err = s.userCurr(c.Value)
 					if checkErr(err, w) {
@@ -197,7 +205,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, red, http.StatusSeeOther)
 		case path == "st":
 			var count int64
-			s.DB.Model(&model.User{}).Count(&count)
+			s.Stat.Model(&model.User{}).Count(&count)
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(fmt.Sprintf("%d", count)))
 		case path == "api/v1":
@@ -212,7 +220,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			}
-			c, err := r.Cookie("doge")
+			c, err := r.Cookie(cookieUsr)
 			if checkErr(err, w) {
 				return
 			}
@@ -348,11 +356,12 @@ func Arts(art []model.Article, path string, usrID uint) string {
 		})
 	}
 
+	sid := uint(time.Now().UnixNano())
 	for _, a := range art {
 		if a.StatusCode != 200 {
 			continue
 		}
-		px := fmt.Sprintf(`<img loading="lazy" width="1" height="1" src="px?r=%d&uid=%d&aid=%d&ev=rndr">`, time.Now().UnixNano(), usrID, a.ID)
+		px := fmt.Sprintf(`<img loading="lazy" width="1" height="1" src="px?sid=%d&uid=%d&aid=%d&ev=rndr">`, sid, usrID, a.ID)
 		rdurl := ""
 		if strings.HasPrefix(a.Url, "https://") {
 			rdurl = fmt.Sprintf("urls=%s", strings.ToUpper(strings.TrimPrefix(a.Url, "https://")))
@@ -360,7 +369,7 @@ func Arts(art []model.Article, path string, usrID uint) string {
 		if strings.HasPrefix(a.Url, "http://") {
 			rdurl = fmt.Sprintf("url=%s", strings.ToUpper(strings.TrimPrefix(a.Url, "http://")))
 		}
-		rd := fmt.Sprintf(`rd?%s&r=%d&uid=%d&aid=%d&ev=clck`, rdurl, time.Now().UnixNano(), usrID, a.ID)
+		rd := fmt.Sprintf(`rd?%s&sid=%d&uid=%d&aid=%d&ev=clck`, rdurl, sid, usrID, a.ID)
 		categ := ""
 		if a.Category != "" {
 			categ = fmt.Sprintf("<a href='?c=%s'>%s</a>", url.PathEscape(a.Category), strings.ToLower(a.Category))
@@ -449,11 +458,18 @@ func (s *Server) ArticlesByDateC(from, to time.Time, params url.Values) ([]model
 func parseEvent(params url.Values) *model.Event {
 	ev := &model.Event{}
 	ev.Event = params.Get("ev")
-	uid, err := strconv.ParseInt(params.Get("uid"), 10, 64)
+	if len(ev.Event) != 4 {
+		return ev
+	}
+	sid, err := strconv.ParseUint(params.Get("sid"), 10, 64)
+	if err == nil {
+		ev.SessionId = uint(sid)
+	}
+	uid, err := strconv.ParseUint(params.Get("uid"), 10, 64)
 	if err == nil {
 		ev.UserId = uint(uid)
 	}
-	aid, err := strconv.ParseInt(params.Get("aid"), 10, 64)
+	aid, err := strconv.ParseUint(params.Get("aid"), 10, 64)
 	if err == nil {
 		ev.ArticleId = uint(aid)
 	}
@@ -465,7 +481,7 @@ func parseEvent(params url.Values) *model.Event {
 // in other cases save fields in db
 // return cookie for update
 func (s *Server) userUps(host string, usr *model.User) (*http.Cookie, error) {
-	res := s.DB.Save(usr)
+	res := s.Stat.Save(usr)
 	if res.Error != nil {
 		return nil, res.Error
 	}
@@ -487,7 +503,7 @@ func (s *Server) userUps(host string, usr *model.User) (*http.Cookie, error) {
 		return nil, err
 	}
 	cookie := http.Cookie{
-		Name:    "doge",
+		Name:    cookieUsr,
 		Domain:  host,
 		Value:   token.String(),
 		Path:    "/",

@@ -62,20 +62,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = db.AutoMigrate(&model.User{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = db.Migrator().DropTable("events")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if ver == 2 {
-		tx := db.Exec("DELETE FROM users")
-		if tx.Error != nil {
-			log.Fatal(tx.Error)
+	if ver == 3 {
+		err = db.Migrator().DropTable("users")
+		if err != nil {
+			log.Fatal(err)
 		}
 	}
 
@@ -92,16 +82,21 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if ver == 3 {
+		err = stat.Migrator().DropTable("events")
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	err = stat.AutoMigrate(&model.Event{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if ver == 2 {
-		tx := stat.Exec("DELETE FROM events")
-		if tx.Error != nil {
-			log.Fatal(tx.Error)
-		}
+	err = stat.AutoMigrate(&model.User{})
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	if sqlDBStat, err := stat.DB(); err == nil {

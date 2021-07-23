@@ -101,7 +101,9 @@ func (habr *Habr) Article(link string) (*model.Article, error) {
 			height = strings.TrimSpace(item.AttrOr("content", ""))
 		case "aiturec:datetime":
 			if datePub, err := time.Parse(time.RFC3339, item.AttrOr("content", "")); err == nil {
-				a.DatePub = datePub
+				if msk, err := time.LoadLocation("Europe/Moscow"); err == nil {
+					a.DatePub = datePub.In(msk)
+				}
 			}
 
 		}
@@ -110,15 +112,16 @@ func (habr *Habr) Article(link string) (*model.Article, error) {
 		a.ImageBannerMeta = fmt.Sprintf("width=%s&height=%s", width, height)
 	}
 	a.Language = "ru"
-	habr.bow.Find("a.hub-link").Each(func(i int, s *goquery.Selection) {
+	habr.bow.Find("a.tm-article-body__tags-item-link").Each(func(i int, s *goquery.Selection) {
 		cat := strings.ToLower(strings.TrimSpace(s.Text()))
-		if a.Category == "" && !strings.Contains(cat, "блог") {
+		if !strings.Contains(cat, "блог") {
 			a.Category = cat
 		}
 	})
-	cntViewS := strings.TrimSpace(habr.bow.Find("span.post-stats__views-count").First().Text())
+	cntViewS := strings.TrimSpace(habr.bow.Find("span.tm-icon-counter__value").First().Text())
+	//fmt.Println("cntViewS", cntViewS)
 	k := 1
-	if strings.HasSuffix(cntViewS, "k") {
+	if strings.HasSuffix(cntViewS, "K") {
 		//115k
 		k = 1000
 		cntViewS = cntViewS[:len(cntViewS)-1]
@@ -131,7 +134,7 @@ func (habr *Habr) Article(link string) (*model.Article, error) {
 		a.CntView = int(cntView * float64(k))
 	}
 
-	cntLikeS := habr.bow.Find("span.voting-wjt__counter").First().Text()
+	cntLikeS := habr.bow.Find("span.tm-votes-meter__value").First().Text()
 	if strings.HasPrefix(cntLikeS, "+") || strings.HasPrefix(cntLikeS, "-") {
 		cntLikeS = cntLikeS[1:]
 	}
@@ -139,27 +142,27 @@ func (habr *Habr) Article(link string) (*model.Article, error) {
 		a.CntLike = int(cntLike)
 	}
 
-	cntComS := strings.TrimSpace(habr.bow.Find("span.post-stats__comments-count").First().Text())
+	cntComS := strings.TrimSpace(habr.bow.Find("span.tm-article-comments-counter-link__value").First().Text())
+	cntComS = strings.TrimSpace(strings.ReplaceAll(cntComS, "Комментарии", ""))
+	//fmt.Println("cntComS", cntComS)
 	if cntCom, err := strconv.ParseInt(cntComS, 10, 64); err == nil {
 		a.CntComm = int(cntCom)
 	}
-	a.AuthorName = habr.bow.Find("span.user-info__nickname").First().Text()
-	habr.bow.Find("a.post__user-info").Each(func(_ int, s *goquery.Selection) {
+	a.AuthorName = strings.TrimSpace(habr.bow.Find("a.tm-user-card__nickname").First().Text())
+	habr.bow.Find("a.tm-user-card__nickname").Each(func(_ int, s *goquery.Selection) {
 		if link, ok := s.Attr("href"); ok {
-			a.AuthorUrl = link
+			a.AuthorUrl = "https://" + habr.HostName + link
 		}
 	})
-	habr.bow.Find("img.user-info__image-pic").Each(func(_ int, s *goquery.Selection) {
+	habr.bow.Find("img.tm-entity-image__pic").Each(func(_ int, s *goquery.Selection) {
 		if link, ok := s.Attr("src"); ok {
-			if a.AuthorAva == "" {
-				a.AuthorAva = link
-			}
+			a.AuthorAva = link
 		}
 	})
 	if strings.HasPrefix(a.AuthorAva, "//") {
 		a.AuthorAva = "https:" + a.AuthorAva
 	}
-	cnt := habr.bow.Find("div.post__body_full").First()
+	cnt := habr.bow.Find("div.tm-article-body").First()
 	if cnt != nil {
 		if html, err := cnt.Html(); err == nil {
 			a.ContentHtml = html
