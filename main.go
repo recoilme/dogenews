@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	ver = 3 //v0.0.3
+	ver = 4 //v0.0.4
 	//params
 	address  = flag.String("address", ":80", "address to listen on (default: :80)")
 	dbFile   = flag.String("dbfile", "db.db", "database file (main)")
@@ -62,13 +62,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if ver == 3 {
-		err = db.Migrator().DropTable("users")
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	// close on exit
 	if sqlDB, err := db.DB(); err == nil {
 		defer sqlDB.Close()
@@ -81,8 +74,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	if ver == 3 {
+	if ver == 4 {
 		err = stat.Migrator().DropTable("events")
 		if err != nil {
 			log.Fatal(err)

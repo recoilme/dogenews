@@ -188,15 +188,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if checkErr(err, w) {
 				return
 			}
-			red := params.Get("urls") //urlS == httpS
-			if red == "" {
-				red = params.Get("url") //http
-				red = "http://" + strings.ToLower(red)
-			} else {
-				red = "https://" + strings.ToLower(red)
-			}
+			red, _ := url.QueryUnescape(params.Get("u"))
 			ev := parseEvent(params)
-			if ev.UserId > 0 {
+			//fmt.Printf("ev:%+v\n", ev)
+			if ev.UserId != 0 {
 				//skip bots (userId == 0)
 				s.Evs.Mu.Lock()
 				s.Evs.Buf = append(s.Evs.Buf, ev)
@@ -206,8 +201,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case path == "st":
 			var count int64
 			s.Stat.Model(&model.User{}).Count(&count)
+			type result struct {
+				cnt uint
+			}
+			res := &result{}
+			s.Stat.Table("users").Select("count(id)").Where("tg_id not null").Scan(res)
+
+			//db.Not(User{Name: "jinzhu", Age: 18}).First(&user)
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(fmt.Sprintf("%d", count)))
+			w.Write([]byte(fmt.Sprintf("%d / %d", count, res.cnt)))
 		case path == "api/v1":
 			params, err := url.ParseQuery(r.URL.RawQuery)
 			if checkErr(err, w) {
@@ -362,14 +364,7 @@ func Arts(art []model.Article, path string, usrID uint) string {
 			continue
 		}
 		px := fmt.Sprintf(`<img loading="lazy" width="1" height="1" src="px?sid=%d&uid=%d&aid=%d&ev=rndr">`, sid, usrID, a.ID)
-		rdurl := ""
-		if strings.HasPrefix(a.Url, "https://") {
-			rdurl = fmt.Sprintf("urls=%s", strings.ToUpper(strings.TrimPrefix(a.Url, "https://")))
-		}
-		if strings.HasPrefix(a.Url, "http://") {
-			rdurl = fmt.Sprintf("url=%s", strings.ToUpper(strings.TrimPrefix(a.Url, "http://")))
-		}
-		rd := fmt.Sprintf(`rd?%s&sid=%d&uid=%d&aid=%d&ev=clck`, rdurl, sid, usrID, a.ID)
+		rd := fmt.Sprintf(`rd?u=%s&sid=%d&uid=%d&aid=%d&ev=clck`, url.QueryEscape(a.Url), sid, usrID, a.ID)
 		categ := ""
 		if a.Category != "" {
 			categ = fmt.Sprintf("<a href='?c=%s'>%s</a>", url.PathEscape(a.Category), strings.ToLower(a.Category))

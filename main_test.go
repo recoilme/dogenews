@@ -22,3 +22,13 @@ func Test_Auth(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://t.me/i/userpic/320/jKp4n4Lk3i9yDV1dBo3WQrL3mFaQl7bgLgd0Ip_UWZM.jpg", fmt.Sprintf("%s", u.PhotoURL))
 }
+
+func Test_Enc(t *testing.T) {
+	u1 := "http://VC.RU/273258"
+	u := url.PathEscape(u1)
+	//fmt.Println(u)
+	u, _ = url.PathUnescape(u)
+	//fmt.Println(u)
+	assert.Equal(t, u1, u)
+
+}
