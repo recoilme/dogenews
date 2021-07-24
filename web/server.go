@@ -191,7 +191,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			red, _ := url.QueryUnescape(params.Get("u"))
 			ev := parseEvent(params)
 			//fmt.Printf("ev:%+v\n", ev)
-			if ev.UserId != 0 {
+			if ev.UserId > 0 && ev.SessionId > 0 {
 				//skip bots (userId == 0)
 				s.Evs.Mu.Lock()
 				s.Evs.Buf = append(s.Evs.Buf, ev)
