@@ -28,7 +28,7 @@ Something between reddit & facebook. Now implemeneted: vc.ru and habr.com
 - [x] import pipeline
 - [x] simple draft algorithm
 - [x] authorization
-- [ ] collect stats by user
+- [x] collect stats by user
 - [ ] personalization
 
 

@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	ver = 5 //v0.0.5
+	ver = 6 //v0.0.6
 	//params
 	address  = flag.String("address", ":80", "address to listen on (default: :80)")
 	dbFile   = flag.String("dbfile", "db.db", "database file (main)")
