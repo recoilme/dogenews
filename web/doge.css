@@ -17,8 +17,8 @@
 		--border: 1px solid var(--cmed);
 		--rem: 14pt;
 		--width: 50rem;
-		--font-p: 1em/1.6em "Fira Sans",-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell","Droid Sans", "Helvetica Neue", sans-serif;
-		--font-h: 1em/1.6em "PT Serif","Georgia", serif;
+		--font-p: 1rem/1.6 "Fira Sans",-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell","Droid Sans", "Helvetica Neue", sans-serif;
+		--font-h: 0.9rem/1.5 "PT Serif","Georgia", serif;
 		--font-c: 80% monospace;
 	}
 	
@@ -93,8 +93,8 @@
 	/* headings */
 	h1, h2, h3, h4, h5 { margin: 1.5em 0 .5rem; font: var(--font-h); line-height: 1.2em; clear: both; }
 	h1+h2, h2+h3, h3+h4, h4+h5 { margin-top: .5em; padding-top: 0; }  /* non-clashing headings */
-	h1 { font-size: 2.2em; font-weight: 400; }
-	h2 { font-size: 2.0em; font-weight: 400; font-variant: small-caps; }
+	h1 { font-size: 2.0em; font-weight: 400; }
+	h2 { font-size: 1.8em; font-weight: 400; font-variant: small-caps; }
 	h3 { font-size: 1.5em; font-weight: 400; }
 	h4 { font-size: 1.1em; font-weight: 700; }
 	h5 { font-size: 1.2em; font-weight: 400; color: var(--cfg); }

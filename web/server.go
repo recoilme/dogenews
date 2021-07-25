@@ -199,17 +199,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			http.Redirect(w, r, red, http.StatusSeeOther)
 		case path == "st":
-			var count int64
+			var count, count2 int64
 			s.Stat.Model(&model.User{}).Count(&count)
-			type result struct {
-				cnt uint
-			}
-			res := &result{}
-			s.Stat.Table("users").Select("count(id)").Where("tg_id not null").Scan(res)
-
-			//db.Not(User{Name: "jinzhu", Age: 18}).First(&user)
+			s.Stat.Table("users").Where("tg_id not null").Count(&count2)
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(fmt.Sprintf("%d / %d", count, res.cnt)))
+			w.Write([]byte(fmt.Sprintf("%d / %d", count, count2)))
 		case path == "api/v1":
 			params, err := url.ParseQuery(r.URL.RawQuery)
 			if checkErr(err, w) {
