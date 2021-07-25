@@ -66,7 +66,8 @@ type Event struct {
 	CreatedAt time.Time `gorm:"index"`
 	UpdatedAt time.Time
 
-	SessionId uint   `gorm:"index"`
+	SessionId uint `gorm:"index"`
+	Pos       uint
 	Event     string `gorm:"index"`
 	UserId    uint   `gorm:"index"`
 	ArticleId uint

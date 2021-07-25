@@ -74,7 +74,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if ver == 4 {
+	if ver == 5 {
 		err = stat.Migrator().DropTable("events")
 		if err != nil {
 			log.Fatal(err)

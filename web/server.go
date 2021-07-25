@@ -55,7 +55,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			//fmt.Println(params, err)
 			ev := parseEvent(params)
-			if ev.UserId > 0 {
+			if ev.UserId > 0 && ev.SessionId > 0 {
 				s.Evs.Mu.Lock()
 				s.Evs.Buf = append(s.Evs.Buf, ev)
 				s.Evs.Mu.Unlock()
@@ -353,12 +353,12 @@ func Arts(art []model.Article, path string, usrID uint) string {
 	}
 
 	sid := uint(time.Now().UnixNano())
-	for _, a := range art {
+	for pos, a := range art {
 		if a.StatusCode != 200 {
 			continue
 		}
-		px := fmt.Sprintf(`<img loading="lazy" width="1" height="1" src="px?sid=%d&uid=%d&aid=%d&ev=rndr">`, sid, usrID, a.ID)
-		rd := fmt.Sprintf(`rd?u=%s&sid=%d&uid=%d&aid=%d&ev=clck`, url.QueryEscape(a.Url), sid, usrID, a.ID)
+		px := fmt.Sprintf(`<img loading="lazy" width="1" height="1" src="px?sid=%d&uid=%d&aid=%d&ev=rndr&p=%d">`, sid, usrID, a.ID, pos)
+		rd := fmt.Sprintf(`rd?u=%s&sid=%d&uid=%d&aid=%d&ev=clck&p=%d`, url.QueryEscape(a.Url), sid, usrID, a.ID, pos)
 		categ := ""
 		if a.Category != "" {
 			categ = fmt.Sprintf("<a href='?c=%s'>%s</a>", url.PathEscape(a.Category), strings.ToLower(a.Category))
@@ -461,6 +461,10 @@ func parseEvent(params url.Values) *model.Event {
 	aid, err := strconv.ParseUint(params.Get("aid"), 10, 64)
 	if err == nil {
 		ev.ArticleId = uint(aid)
+	}
+	p, err := strconv.ParseUint(params.Get("p"), 10, 64)
+	if err == nil {
+		ev.Pos = uint(p)
 	}
 	return ev
 }
