@@ -17,7 +17,9 @@ const (
       <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fefbf4">
       <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#444">
       <link href="m/doge.css" rel="stylesheet" type="text/css" />
+      <script src="m/swipe.js"></script>
       <script src="m/doge.js"></script>
+      
     </head>
     <body>
       <!-- Header -->
@@ -48,25 +50,48 @@ const (
       </header>
       <!-- Main page -->
       <main>
-        %s
-      </main> 
+        <!-- Swiper -->
+        <div id='mySwipe' class="swipe">
+          <div class="swipe-wrapp">
+          %s
+          </div>
+        </div>
+      </main>
       <footer>
         <hr>
       </footer>
+      <script>
+
+// pure JS
+var elem = document.getElementById('mySwipe');
+window.mySwipe = Swipe(elem, {
+   startSlide: 0,
+   auto: 3000,
+   continuous: true,
+   disableScroll: false,
+   stopPropagation: false,
+   callback: function(index, element) {},
+   transitionEnd: function(index, element) {}
+});
+
+// with jQuery
+// window.mySwipe = $('#mySwipe').Swipe().data('Swipe');
+
+</script>
     </body>
   </html>
   `
 
 	article_ = `
-  <article>
-    <section> 
-        <h2><a href="%s">%s</a></h2>
-        <p>
-          %s
-        </p>
-        <time>%s</time>
-        <div>%s&ensp;%s&ensp; %s&ensp;%s</div>
-    </section>
-  </article>  
+    <article class="art">
+      <section> 
+          <h2><a href="%s">%s</a></h2>
+          <p>
+            %s
+          </p>
+          <time>%s</time>
+          <div>%s&ensp;%s&ensp; %s&ensp;%s</div>
+      </section>
+    </article>
   `
 )

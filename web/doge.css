@@ -23,7 +23,7 @@
 	}
 	
 	html[data-theme='light']{
-		--ornament: "🐾";
+		/*--ornament: "🐾";*/
 		/* foreground   | background color */
 		--cfg:   #433;    --cbg:    #fefbf4;
 		--cdark: #6c605c; --clight: #f3efea;
@@ -70,7 +70,7 @@
 		overflow-x: hidden;
 		-webkit-font-smoothing: antialiased;
 	}
-	body > footer { margin: 10rem 0rem 0rem; }
+	body > footer { margin: 1rem 0rem 0rem; }
 
 	/* reset clickable things */
 	a, button, select, summary { color: var(--clink); cursor: pointer; }
@@ -381,3 +381,30 @@
 	.p-1, .px-1, .pl-1 { padding-left:   1.0rem !important; }
 	.p-1, .py-1, .pt-1 { padding-top:    1.0rem !important; }
 	.p-1, .py-1, .pb-1 { padding-bottom: 1.0rem !important; }
+
+	.swipe {
+		overflow: hidden;
+		visibility: hidden;
+		position: relative;
+		height: 600px; /* MANDATORY ! */
+	}
+	.swipe-wrap {
+		overflow: hidden;
+		position: relative;
+	}
+	.swipe-wrap > article {
+		float:left;
+		width:100%;
+		
+		position: relative;
+	}
+
+	.art {
+		background-color: blue;
+		height: 100vh;
+		width: 100vw;
+		position: absolute;
+		top: 0;
+		left: 0;
+		color: white;
+	  }

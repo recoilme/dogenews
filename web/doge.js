@@ -20,6 +20,21 @@ function toggleDarkMode(el){
     fetch("/api/v1?theme="+theme)
 }
 
+//document.addEventListener("DOMContentLoaded", function(){
+    //....
+  //  var elem = document.getElementById('mySwipe');
+  //  window.mySwipe = Swipe(elem, {
+    // startSlide: 4,
+    // auto: 3000,
+    // continuous: true,
+    // disableScroll: true,
+    // stopPropagation: true,
+    // callback: function(index, element) {},
+    // transitionEnd: function(index, element) {}
+  //  });
+//});
+
+/*
 var currH2 = 0;//current visible doc header
 
 window.addEventListener('load', function() {
@@ -72,4 +87,4 @@ document.onkeypress = function (e) {
             window.scrollTo({ top: doc.offsetTop-20, behavior: 'smooth'});
             break;
     }
-}
+}*/

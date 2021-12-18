@@ -33,7 +33,7 @@ func (vc *Vc) Links() ([]string, error) {
 		return nil, err
 	}
 	links := make([]string, 0, 10)
-	vc.bow.Find("a.content-feed__link").Each(func(_ int, s *goquery.Selection) {
+	vc.bow.Find("a.content-link").Each(func(_ int, s *goquery.Selection) {
 		if link, ok := s.Attr("href"); ok {
 			if l, ok := vc.LinkOk(link, false); ok {
 				links = append(links, l)
