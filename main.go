@@ -174,15 +174,23 @@ func main() {
 			HostPolicy: autocert.HostWhitelist("doge.news"),
 			Client:     client,
 		}
-		s := &http.Server{
-			Addr:      *address,
-			TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
+		ln, err := tls.Listen("tcp", *address, &tls.Config{
+			GetCertificate: m.GetCertificate,
+		})
+		if err != nil {
+			log.Fatal(err)
 		}
+		//s := &http.Server{
+		//	Addr:      *address,
+		//	TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
+		//}
 		//run on server - redirect HTTP 2 HTTPS
 		go http.ListenAndServe(*address, http.HandlerFunc(redirectHTTP))
 		//run HTTP/2 server
 		fmt.Println("Start (zerossl):", time.Now())
-		log.Fatal(s.ListenAndServeTLS("", ""))
+		//http.Serve(tls.NewListener())
+
+		log.Fatal(http.Serve(ln, srv))
 	}
 	//run on localhost/debug via HTTP/1.1 (8080 and so on port)
 	fmt.Println("Start(debug):", time.Now())
