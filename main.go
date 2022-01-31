@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/PixelCoda/autocert"
 	"github.com/recoilme/dogenews/model"
 	"github.com/recoilme/dogenews/web"
 	"github.com/recoilme/graceful"
@@ -145,12 +144,12 @@ func main() {
 	//web server
 	if *address == ":80" {
 		//run on server - redirect HTTP 2 HTTPS
-		go http.ListenAndServe(*address, http.HandlerFunc(redirectHTTP))
+		//go http.ListenAndServe(*address, http.HandlerFunc(redirectHTTP))
 		//run HTTP/2 server
-		fmt.Println("Start(z):", time.Now())
+		fmt.Println("Start:", time.Now())
 		//autocert.Manager .DefaultACMEDirectory = "https://acme.zerossl.com/v2/DV90"
-		log.Fatal(http.Serve(autocert.NewListener("doge.news"), srv))
-
+		//log.Fatal(http.Serve(autocert.NewListener("doge.news"), srv))
+		log.Fatal(http.ListenAndServe(*address, srv))
 	}
 	//run on localhost/debug via HTTP/1.1 (8080 and so on port)
 	fmt.Println("Start(debug):", time.Now())
