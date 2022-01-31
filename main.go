@@ -156,7 +156,7 @@ func main() {
 		certmagic.DefaultACME.Email = "vadim-kulibaba@yandex.ru"
 
 		// use the staging endpoint while we're developing
-		certmagic.DefaultACME.CA = certmagic.LetsEncryptStagingCA
+		certmagic.DefaultACME.CA = certmagic.ZeroSSLProductionCA
 		fmt.Println("Start:", time.Now())
 		log.Fatal(certmagic.HTTPS([]string{"doge.news"}, srv))
 	}
