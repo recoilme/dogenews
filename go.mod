@@ -3,6 +3,7 @@ module github.com/recoilme/dogenews
 go 1.16
 
 require (
+	github.com/PixelCoda/autocert v0.0.0-20211127155539-89be1eef05a2 // indirect
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/caddyserver/certmagic v0.15.2
 	github.com/cristalhq/jwt/v3 v3.1.0
