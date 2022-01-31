@@ -12,11 +12,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/caddyserver/certmagic"
 	"github.com/recoilme/dogenews/model"
 	"github.com/recoilme/dogenews/web"
 	"github.com/recoilme/graceful"
 	"github.com/tidwall/interval"
-	"golang.org/x/crypto/acme/autocert"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -145,10 +145,20 @@ func main() {
 	//web server
 	if *address == ":80" {
 		//run on server - redirect HTTP 2 HTTPS
-		go http.ListenAndServe(*address, http.HandlerFunc(redirectHTTP))
+		//go http.ListenAndServe(*address, http.HandlerFunc(redirectHTTP))
 		//run HTTP/2 server
+		//fmt.Println("Start:", time.Now())
+		//log.Fatal(http.Serve(autocert.NewListener("doge.news"), srv))
+		// read and agree to your CA's legal documents
+		certmagic.DefaultACME.Agreed = true
+
+		// provide an email address
+		certmagic.DefaultACME.Email = "vadim-kulibaba@yandex.ru"
+
+		// use the staging endpoint while we're developing
+		certmagic.DefaultACME.CA = certmagic.LetsEncryptStagingCA
 		fmt.Println("Start:", time.Now())
-		log.Fatal(http.Serve(autocert.NewListener("doge.news"), srv))
+		log.Fatal(certmagic.HTTPS([]string{"doge.news"}, srv))
 	}
 	//run on localhost/debug via HTTP/1.1 (8080 and so on port)
 	fmt.Println("Start(debug):", time.Now())
